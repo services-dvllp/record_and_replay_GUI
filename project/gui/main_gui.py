@@ -36,6 +36,7 @@ def _load_legacy_ui_class():
     # Reuse the actual legacy constant when available.
     wifi_label = getattr(module, "WIFI_INTERFACE_OPTION", WIFI_INTERFACE_OPTION)
     return module.Ui_MainWindow, wifi_label
+    return module.Ui_MainWindow
 
 
 class MainGuiWindow(QtWidgets.QMainWindow):
@@ -44,6 +45,7 @@ class MainGuiWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         Ui_MainWindow, self.wifi_interface_option = _load_legacy_ui_class()
+        Ui_MainWindow = _load_legacy_ui_class()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -70,6 +72,12 @@ class MainGuiWindow(QtWidgets.QMainWindow):
     def _on_interface_changed(self):
         selected = self.ui.comboBox_comport.currentText()
         if selected == self.wifi_interface_option:
+        self.ui.pushButton_usb_info.clicked.disconnect()
+        self.ui.pushButton_usb_info.clicked.connect(self.open_usb_info)
+
+    def _on_interface_changed(self):
+        selected = self.ui.comboBox_comport.currentText()
+        if selected == WIFI_INTERFACE_OPTION:
             self.interface_manager.set_interface(
                 interface_type=InterfaceManager.INTERFACE_WIFI,
                 ssid=self.ui.lineEdit_ssid.text(),
