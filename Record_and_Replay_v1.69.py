@@ -1562,9 +1562,79 @@ class Ui_MainWindow(object):
         """)
         self.label_developer.setVisible(False)
 
+        self.label_ssid = QtWidgets.QLabel(self.frame)
+        self.label_ssid.setGeometry(QtCore.QRect(210, 350, 120, 30))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        font.setBold(True)
+        self.label_ssid.setFont(font)
+        self.label_ssid.setObjectName("label_ssid")
+        self.label_ssid.setText("SSID")
+        self.label_ssid.setStyleSheet("""
+            QLabel {
+                color: #ECF0F1;
+            }
+        """)
+
+        self.lineEdit_ssid = QtWidgets.QLineEdit(self.frame)
+        self.lineEdit_ssid.setGeometry(QtCore.QRect(280, 350, 180, 30))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setBold(False)
+        self.lineEdit_ssid.setFont(font)
+        self.lineEdit_ssid.setPlaceholderText("Enter SSID")
+        self.lineEdit_ssid.setObjectName("lineEdit_ssid")
+        self.lineEdit_ssid.setStyleSheet("""
+                                        QLineEdit {
+                                            background-color: #2C3E50;
+                                            color: #FFFFFF;
+                                            border: 2px solid #1ABC9C;
+                                            border-radius: 5px;
+                                            padding: 5px;
+                                        }
+                                        QLineEdit:focus {
+                                            border: 2px solid #2E5;
+                                        }
+                                    """)
+
+        self.label_password = QtWidgets.QLabel(self.frame)
+        self.label_password.setGeometry(QtCore.QRect(210, 390, 120, 30))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        font.setBold(True)
+        self.label_password.setFont(font)
+        self.label_password.setObjectName("label_password")
+        self.label_password.setText("Password")
+        self.label_password.setStyleSheet("""
+            QLabel {
+                color: #ECF0F1;
+            }
+        """)
+
+        self.lineEdit_password = QtWidgets.QLineEdit(self.frame)
+        self.lineEdit_password.setGeometry(QtCore.QRect(280, 390, 180, 30))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setBold(False)
+        self.lineEdit_password.setFont(font)
+        self.lineEdit_password.setPlaceholderText("Enter Password")
+        self.lineEdit_password.setObjectName("lineEdit_password")
+        self.lineEdit_password.setStyleSheet("""
+                                        QLineEdit {
+                                            background-color: #2C3E50;
+                                            color: #FFFFFF;
+                                            border: 2px solid #1ABC9C;
+                                            border-radius: 5px;
+                                            padding: 5px;
+                                        }
+                                        QLineEdit:focus {
+                                            border: 2px solid #2E5;
+                                        }
+                                    """)
+
 
         self.label_ref_freq = QtWidgets.QLabel(self.frame)
-        self.label_ref_freq.setGeometry(QtCore.QRect(210, 390, 350, 50))
+        self.label_ref_freq.setGeometry(QtCore.QRect(210, 430, 350, 50))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
@@ -1578,7 +1648,7 @@ class Ui_MainWindow(object):
         """)
 
         self.comboBox_ref_freq = QtWidgets.QComboBox(self.frame)
-        self.comboBox_ref_freq.setGeometry(QtCore.QRect(280, 440, 130, 30))
+        self.comboBox_ref_freq.setGeometry(QtCore.QRect(280, 480, 130, 30))
         font = QtGui.QFont()
         font.setPointSize(10)
         font.setBold(False)
@@ -3308,7 +3378,7 @@ class Ui_MainWindow(object):
         
         #submit button
         self.pushButton_submit = QtWidgets.QPushButton(self.frame)
-        self.pushButton_submit.setGeometry(QtCore.QRect(305, 500, 80, 30))
+        self.pushButton_submit.setGeometry(QtCore.QRect(210, 525, 80, 30))
         font = QtGui.QFont()
         font.setPointSize(13)
         font.setBold(True)
@@ -16774,7 +16844,6 @@ if __name__ == "__main__":
     MainWindow = MainWindowWithCloseEvent()
     MainWindow.show()
     sys.exit(app.exec())
-
 
 
 
