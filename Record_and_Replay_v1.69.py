@@ -1563,13 +1563,13 @@ class Ui_MainWindow(object):
         self.label_developer.setVisible(False)
 
         self.label_ssid = QtWidgets.QLabel(self.frame)
-        self.label_ssid.setGeometry(QtCore.QRect(210, 350, 120, 30))
+        self.label_ssid.setGeometry(QtCore.QRect(280, 350, 120, 30))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
         self.label_ssid.setFont(font)
         self.label_ssid.setObjectName("label_ssid")
-        self.label_ssid.setText("SSID")
+        self.label_ssid.setText("")
         self.label_ssid.setStyleSheet("""
             QLabel {
                 color: #ECF0F1;
@@ -1577,7 +1577,7 @@ class Ui_MainWindow(object):
         """)
 
         self.lineEdit_ssid = QtWidgets.QLineEdit(self.frame)
-        self.lineEdit_ssid.setGeometry(QtCore.QRect(280, 350, 180, 30))
+        self.lineEdit_ssid.setGeometry(QtCore.QRect(300, 400, 120, 30))
         font = QtGui.QFont()
         font.setPointSize(10)
         font.setBold(False)
@@ -1598,13 +1598,13 @@ class Ui_MainWindow(object):
                                     """)
 
         self.label_password = QtWidgets.QLabel(self.frame)
-        self.label_password.setGeometry(QtCore.QRect(210, 390, 120, 30))
+        self.label_password.setGeometry(QtCore.QRect(160, 400, 130, 30))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
         self.label_password.setFont(font)
         self.label_password.setObjectName("label_password")
-        self.label_password.setText("Password")
+        self.label_password.setText("SSID & Password")
         self.label_password.setStyleSheet("""
             QLabel {
                 color: #ECF0F1;
@@ -1612,7 +1612,7 @@ class Ui_MainWindow(object):
         """)
 
         self.lineEdit_password = QtWidgets.QLineEdit(self.frame)
-        self.lineEdit_password.setGeometry(QtCore.QRect(280, 390, 180, 30))
+        self.lineEdit_password.setGeometry(QtCore.QRect(450, 400, 120, 30))
         font = QtGui.QFont()
         font.setPointSize(10)
         font.setBold(False)
@@ -1646,6 +1646,7 @@ class Ui_MainWindow(object):
                 color: #ECF0F1;  # Text color
             }
         """)
+        self.label_ref_freq.setVisible(False)
 
         self.comboBox_ref_freq = QtWidgets.QComboBox(self.frame)
         self.comboBox_ref_freq.setGeometry(QtCore.QRect(280, 480, 130, 30))
@@ -1654,6 +1655,7 @@ class Ui_MainWindow(object):
         font.setBold(False)
         self.comboBox_ref_freq.setFont(font)
         self.comboBox_ref_freq.setObjectName("comboBox_ref_freq")
+        self.comboBox_ref_freq.setVisible(False)
 
         # Apply the same modern style
         self.comboBox_ref_freq.setStyleSheet("""
@@ -1777,9 +1779,9 @@ class Ui_MainWindow(object):
         self.radio_group.addButton(self.radioButton_rfmdmode)
         self.radioButton_gpiomode.setChecked(True)
 
-        self.label_gpiomode.setVisible(True)
-        self.radioButton_gpiomode.setVisible(True)
-        self.radioButton_rfmdmode.setVisible(True)
+        self.label_gpiomode.setVisible(False)
+        self.radioButton_gpiomode.setVisible(False)
+        self.radioButton_rfmdmode.setVisible(False)
 
         self.label_radio = QtWidgets.QLabel(self.frame)
         self.label_radio.setGeometry(QtCore.QRect(190, 120, 350, 25))
@@ -2006,8 +2008,11 @@ class Ui_MainWindow(object):
         self.update_com_ports_rtcm()
         if not RTCM_ports:
             self.comboBox_comport_rtcm.addItem("Select Port")
+            self.comboBox_comport_rtcm.addItem("HW USB")
+
         if not non_rtcm_ports:
             self.comboBox_comport.addItem("Select Port") 
+            self.comboBox_comport.addItem(WIFI_INTERFACE_OPTION) 
         
         self.comboBox_comport_rtcm.setEnabled(False)
         self.comboBox_comport_rtcm.showPopup = self.comboBox_comport_rtcm_popup
@@ -3378,7 +3383,7 @@ class Ui_MainWindow(object):
         
         #submit button
         self.pushButton_submit = QtWidgets.QPushButton(self.frame)
-        self.pushButton_submit.setGeometry(QtCore.QRect(210, 525, 80, 30))
+        self.pushButton_submit.setGeometry(QtCore.QRect(320, 450, 80, 30))
         font = QtGui.QFont()
         font.setPointSize(13)
         font.setBold(True)
@@ -6641,17 +6646,17 @@ class Ui_MainWindow(object):
             self.pushButton_5.setVisible(True)
             self.lineEdit.setVisible(False)
             self.comboBox_comport.setVisible(True)
-            self.label_ref_freq.setVisible(True)
-            self.comboBox_ref_freq.setVisible(True)
+            self.label_ref_freq.setVisible(False)
+            self.comboBox_ref_freq.setVisible(False)
             self.comboBox_baudrate.setVisible(True)
             self.pushButton_submit.setVisible(True)
             self.label_connectivity.setVisible(True)
             self.radioButton_double.setVisible(True)
             self.radioButton_single.setVisible(True)
             self.label_radio.setVisible(True)
-            self.label_gpiomode.setVisible(True)
-            self.radioButton_gpiomode.setVisible(True)
-            self.radioButton_rfmdmode.setVisible(True)
+            self.label_gpiomode.setVisible(False)
+            self.radioButton_gpiomode.setVisible(False)
+            self.radioButton_rfmdmode.setVisible(False)
             self.comboBox_baudrate_rtcm.setVisible(True)
             self.radioButton_ad9361.setVisible(True)
             self.radioButton_rtcm.setVisible(True)
@@ -9274,14 +9279,14 @@ class Ui_MainWindow(object):
             self.radioButton_double.setVisible(True)
             self.radioButton_single.setVisible(True)
             self.label_radio.setVisible(True)
-            self.label_gpiomode.setVisible(True)
-            self.radioButton_gpiomode.setVisible(True)
-            self.radioButton_rfmdmode.setVisible(True)
+            self.label_gpiomode.setVisible(False)
+            self.radioButton_gpiomode.setVisible(False)
+            self.radioButton_rfmdmode.setVisible(False)
             self.pushButton_submit.setVisible(True)
             self.comboBox_baudrate.setVisible(True)
             self.comboBox_comport.setVisible(True)
-            self.label_ref_freq.setVisible(True)
-            self.comboBox_ref_freq.setVisible(True)
+            self.label_ref_freq.setVisible(False)
+            self.comboBox_ref_freq.setVisible(False)
             self.comboBox_baudrate_rtcm.setVisible(True)
             self.radioButton_ad9361.setVisible(True)
             self.radioButton_rtcm.setVisible(True)
@@ -13823,17 +13828,17 @@ class Ui_MainWindow(object):
             self.lineEdit.setVisible(False)
             if(not comport_connected):
                 self.comboBox_comport.setVisible(True)
-                self.label_ref_freq.setVisible(True)
-                self.comboBox_ref_freq.setVisible(True)
+                self.label_ref_freq.setVisible(False)
+                self.comboBox_ref_freq.setVisible(False)
                 self.comboBox_baudrate.setVisible(True)
                 self.pushButton_submit.setVisible(True)
                 self.label_connectivity.setVisible(True)
                 self.radioButton_double.setVisible(True)
                 self.radioButton_single.setVisible(True)
                 self.label_radio.setVisible(True)
-                self.label_gpiomode.setVisible(True)
-                self.radioButton_gpiomode.setVisible(True)
-                self.radioButton_rfmdmode.setVisible(True)
+                self.label_gpiomode.setVisible(False)
+                self.radioButton_gpiomode.setVisible(False)
+                self.radioButton_rfmdmode.setVisible(False)
                 self.comboBox_baudrate_rtcm.setVisible(True)
                 self.radioButton_ad9361.setVisible(True)
                 self.radioButton_rtcm.setVisible(True)
