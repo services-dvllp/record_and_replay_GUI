@@ -1358,17 +1358,6 @@ class Ui_MainWindow(object):
         wifi_interface_selected = (self.comboBox_comport.currentText() == WIFI_INTERFACE_OPTION)
         if hasattr(self, "comboBox_baudrate"):
             self.comboBox_baudrate.setEnabled(not wifi_interface_selected)
-        wifi_fields = [
-            "label_ssid",
-            "label_password",
-            "lineEdit_ssid",
-            "lineEdit_password",
-        ]
-        for field_name in wifi_fields:
-            if hasattr(self, field_name):
-                field = getattr(self, field_name)
-                field.setVisible(wifi_interface_selected)
-                field.setEnabled(not wifi_interface_selected)
     
     def check_comport_Regularly(self):
         while True:
@@ -1642,7 +1631,6 @@ class Ui_MainWindow(object):
                                             border: 2px solid #2E5;
                                         }
                                     """)
-        self.update_wifi_interface_state()
 
 
         self.label_ref_freq = QtWidgets.QLabel(self.frame)
@@ -16861,6 +16849,7 @@ if __name__ == "__main__":
     MainWindow = MainWindowWithCloseEvent()
     MainWindow.show()
     sys.exit(app.exec())
+
 
 
 
