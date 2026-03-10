@@ -187,6 +187,9 @@ comport_1_checked = False
 comport_2_checked = False
 main_func_called = False
 ###############################################################################
+def send_command(command):
+    return ser.write(command)
+
 ####################### Get the Current Date and Time ##########################
 def get_current_datetime():
     timestamp = time.time()
@@ -523,7 +526,7 @@ def get_memory_available(fs_system):
     bss = ser.readlines(ser.in_waiting)
     #########################################################
     #########################################################
-    ser.write(bytearray('df\n','ascii'))
+    send_command(bytearray('df\n','ascii'))
     if Commands_file_user:
         with open(file_path, 'a') as file:
             file.write(f'{get_current_datetime()}   df\n')
@@ -741,13 +744,13 @@ class Ui_MainWindow(object):
                 if self.radioButton_GPIO_Record.isChecked():
                     print("GPIO Record is selected")
                     xyz = f"sudo /home/root/adc4bits/libiio/build/examples/GPIO_RR record {pathforfile_folder}{file_foldername} {int(durationforlog)+1} > {pathforfile_folder}{file_foldername}log 2>&1 &"
-                    ser.write(bytearray(f"sudo /home/root/adc4bits/libiio/build/examples/GPIO_RR record {pathforfile_folder}{file_foldername} {int(durationforlog)+1} > {pathforfile_folder}{file_foldername}log 2>&1 &\n", 'ascii'))
+                    send_command(bytearray(f"sudo /home/root/adc4bits/libiio/build/examples/GPIO_RR record {pathforfile_folder}{file_foldername} {int(durationforlog)+1} > {pathforfile_folder}{file_foldername}log 2>&1 &\n", 'ascii'))
                     with open(file_path, 'a') as file:
                         file.write(f'\n{xyz}\n')
             if replay_tab:
                 if self.radioButton_GPIO_Replay.isChecked():
                     if autoplayreplay == False:
-                        ser.write(bytearray(f"chmod +x /home/root/adc4bits/libiio/gpio_check.sh; /home/root/adc4bits/libiio/gpio_check.sh {pathforfile_folder}{file_foldername}; (echo END) > /dev/null\n", 'ascii'))
+                        send_command(bytearray(f"chmod +x /home/root/adc4bits/libiio/gpio_check.sh; /home/root/adc4bits/libiio/gpio_check.sh {pathforfile_folder}{file_foldername}; (echo END) > /dev/null\n", 'ascii'))
                         x = f"chmod +x /home/root/adc4bits/libiio/gpio_check.sh {pathforfile_folder}{file_foldername}; (echo END) > /dev/null"
                         with open(file_path, 'a') as file:
                                 file.write(f'\n{get_current_datetime()}   {x}\n')
@@ -767,7 +770,7 @@ class Ui_MainWindow(object):
                     else:
                         result = 1
                     if result == 1:
-                        ser.write(bytearray(f"sudo /home/root/adc4bits/libiio/build/examples/GPIO_RR replay {pathforfile_folder}{file_foldername} {int(durationforlog)+1} {start_offset_replay}&\n", 'ascii'))
+                        send_command(bytearray(f"sudo /home/root/adc4bits/libiio/build/examples/GPIO_RR replay {pathforfile_folder}{file_foldername} {int(durationforlog)+1} {start_offset_replay}&\n", 'ascii'))
                         x = f"sudo /home/root/adc4bits/libiio/build/examples/GPIO_RR replay {pathforfile_folder}{file_foldername} {int(durationforlog)+1} {start_offset_replay}&"
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   {x}\n')
@@ -775,7 +778,7 @@ class Ui_MainWindow(object):
     
     def stop_GPIO_record_replay(self):
         global ser
-        ser.write(bytearray(f'killall -9 GPIO_RR\n', 'ascii'))
+        send_command(bytearray(f'killall -9 GPIO_RR\n', 'ascii'))
         with open(file_path, 'a') as file:
             file.write(f'\n{get_current_datetime()}   killall -9 GPIO_RR\n')
         print("Stopping GPIO Record/Replay")
@@ -834,7 +837,7 @@ class Ui_MainWindow(object):
                     actual_directory = check_command(file_path_of_file)
                     actual_filename = check_command(filename)
                     if comport_is_active: 
-                        ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --mode contents --file {actual_directory}.log; (echo END) > /dev/null\n', 'ascii'))
+                        send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --mode contents --file {actual_directory}.log; (echo END) > /dev/null\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                     file.write(f'\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --mode contents --file {actual_directory}.log; (echo END) > /dev/null\n')
@@ -1046,7 +1049,7 @@ class Ui_MainWindow(object):
                     else:
                         file_ = f"{actual_filename.split(".log")[0]}.bin"
                         if comport_is_active:
-                            ser.write(bytearray(f'[ -f "{file_}" ] && echo "File exists." || echo "File does not exist."\n', 'ascii'))
+                            send_command(bytearray(f'[ -f "{file_}" ] && echo "File exists." || echo "File does not exist."\n', 'ascii'))
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f'\n{get_current_datetime()}   [ -f "{file_}" ] && echo "File exists." || echo "File does not exist."\n')
@@ -1111,7 +1114,7 @@ class Ui_MainWindow(object):
                         comport_is_active = comport_is_On(self.comport)
                         command = check_command(current_path_)
                         if comport_is_active:
-                            ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                            send_command(bytearray(f'cd {command}\n', 'ascii'))
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f'{get_current_datetime()}   cd {command}\n')
@@ -1137,7 +1140,7 @@ class Ui_MainWindow(object):
                         actual_filename = check_command(filename_txt)
                         
                         if comport_is_active:
-                            ser.write(bytearray(f'cat {actual_filename} ; (echo END) > /dev/null\n', 'ascii'))
+                            send_command(bytearray(f'cat {actual_filename} ; (echo END) > /dev/null\n', 'ascii'))
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f'\n{get_current_datetime()}   cat {actual_filename} ; (echo END) > /dev/null\n')
@@ -1186,7 +1189,7 @@ class Ui_MainWindow(object):
                                 comport_is_active = comport_is_On(self.comport)
                                 command = check_command(current_path_)
                                 if comport_is_active:
-                                    ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                                    send_command(bytearray(f'cd {command}\n', 'ascii'))
                                     if Commands_file_user:
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -1210,7 +1213,7 @@ class Ui_MainWindow(object):
                                 comport_is_active = comport_is_On(self.comport)
                                 actual_filename = check_command(filename_txt)
                                 if comport_is_active:
-                                    ser.write(bytearray(f'sed -i "{count}d" {actual_filename} ; (echo END) > /dev/null\n', 'ascii'))
+                                    send_command(bytearray(f'sed -i "{count}d" {actual_filename} ; (echo END) > /dev/null\n', 'ascii'))
                                     if Commands_file_user:
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   sed -i "{count}d" {actual_filename} ; (echo END) > /dev/null\n')
@@ -1235,7 +1238,7 @@ class Ui_MainWindow(object):
                                     return
                                 comport_is_active = comport_is_On(self.comport)
                                 if comport_is_active:
-                                    ser.write(bytearray(f'sed -i "/^$/d" {actual_filename} ; (echo END) > /dev/null\n', 'ascii'))
+                                    send_command(bytearray(f'sed -i "/^$/d" {actual_filename} ; (echo END) > /dev/null\n', 'ascii'))
                                     if Commands_file_user:
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   sed -i "/^$/d" {actual_filename} ; (echo END) > /dev/null\n')
@@ -5138,7 +5141,7 @@ class Ui_MainWindow(object):
                     payload = buf[start_payload:end_payload]
 
                     # Send block
-                    ser.write(payload)
+                    send_command(payload)
                     ser.flush()
 
                     block_count += 1
@@ -5624,8 +5627,8 @@ class Ui_MainWindow(object):
         print(self.comport)
         try:
             ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-            ser.write(b'\x03')
-            ser.write(bytearray('clear\n', 'ascii'))
+            send_command(b'\x03')
+            send_command(bytearray('clear\n', 'ascii'))
             with open(file_path, 'a') as file:
                 file.write(f'\n{get_current_datetime()}   \x03\n')
                 file.write(f'{get_current_datetime()}   clear\n')
@@ -5640,7 +5643,7 @@ class Ui_MainWindow(object):
         comport_is_active = comport_is_On(self.comport)
         if comport_is_active: 
             
-            ser.write(bytearray(f'lsusb ; (echo END) > /dev/null\n', 'ascii'))
+            send_command(bytearray(f'lsusb ; (echo END) > /dev/null\n', 'ascii'))
             if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'\n{get_current_datetime()}   lsblk ; (echo END) > /dev/null\n')
@@ -6256,7 +6259,7 @@ class Ui_MainWindow(object):
                 comport_is_active = comport_is_On(self.comport)
          
                 if comport_is_active:   
-                    ser.write(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
+                    send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
@@ -6271,7 +6274,7 @@ class Ui_MainWindow(object):
                 comport_is_active = comport_is_On(self.comport)
           
                 if comport_is_active:               
-                    ser.write(bytearray(f'cat "{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
+                    send_command(bytearray(f'cat "{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cat "{filename_txt}" ; (echo END) > /dev/null\n')
@@ -6324,7 +6327,7 @@ class Ui_MainWindow(object):
                 
                 elif not "No such file or directory" in (decoded_lines[-1]):
                     if comport_is_active:
-                                ser.write(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
+                                send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
@@ -6358,7 +6361,7 @@ class Ui_MainWindow(object):
                     # Join all commands with a semicolon
                     command_file_read = "; ".join(command_parts) + " ; (echo END) > /dev/null\n"
                     #print(command_file_read)
-                    ser.write(bytearray(command_file_read, 'ascii'))
+                    send_command(bytearray(command_file_read, 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}  {command_file_read}')
@@ -6383,7 +6386,7 @@ class Ui_MainWindow(object):
                             comport_is_active = comport_is_On(self.comport)
 
                             if comport_is_active:
-                                ser.write(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
+                                send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
@@ -6396,7 +6399,7 @@ class Ui_MainWindow(object):
                                 return
                                         
                             if comport_is_active:
-                                ser.write(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt}\n', 'ascii'))
+                                send_command(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt}\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   sed -i "/{line_to_edit}/d" {filename_txt}\n')
@@ -6420,7 +6423,7 @@ class Ui_MainWindow(object):
                     comport_is_active = comport_is_On(self.comport)
                  
                     if comport_is_active: 
-                        ser.write(bytearray(f'cd "{directory}"\n', 'ascii'))
+                        send_command(bytearray(f'cd "{directory}"\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'{get_current_datetime()}   cd "{directory}"\n')
@@ -6434,7 +6437,7 @@ class Ui_MainWindow(object):
                     comport_is_active = comport_is_On(self.comport)
                 
                     if comport_is_active: 
-                        ser.write(bytearray(f'touch "{filename_txt}"\n', 'ascii'))
+                        send_command(bytearray(f'touch "{filename_txt}"\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'{get_current_datetime()}   touch "{filename_txt}"\n')
@@ -6752,7 +6755,7 @@ class Ui_MainWindow(object):
                         boot = False
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active:
-                            ser.write(b'\x03')
+                            send_command(b'\x03')
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   \x03')
@@ -6765,7 +6768,7 @@ class Ui_MainWindow(object):
                             return
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active:
-                            ser.write(bytearray('clear\n', 'ascii'))
+                            send_command(bytearray('clear\n', 'ascii'))
                             if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                                     file.write(f'\n{get_current_datetime()}   clear\n')
@@ -7688,7 +7691,7 @@ class Ui_MainWindow(object):
             file.write(f"\n{get_current_datetime()}   {command}")
         comport_is_active = comport_is_On(self.comport)
         if comport_is_active:
-            ser.write(bytearray(command,'ascii'))
+            send_command(bytearray(command,'ascii'))
             with open(file_path, 'a') as file:
                 file.write(f'\n{get_current_datetime()}   {command}\n')
 
@@ -7703,7 +7706,7 @@ class Ui_MainWindow(object):
             file.write(f"\n{get_current_datetime()}   {command}")
         comport_is_active = comport_is_On(self.comport)
         if comport_is_active:
-            ser.write(bytearray(command,'ascii'))
+            send_command(bytearray(command,'ascii'))
             with open(file_path, 'a') as file:
                 file.write(f'\n{get_current_datetime()}   {command}\n')
         
@@ -8094,7 +8097,7 @@ class Ui_MainWindow(object):
                                     msg_box_compare.setDefaultButton(QMessageBox.StandardButton.Yes)
                                     reply_ = msg_box_compare.exec()
                                     if reply_ == QMessageBox.StandardButton.Yes: 
-                                        #ser.write(bytearray(f"sudo /home/root/adc4bits/libiio/build/examples/GPIO_RR replay {path_auto}{filename_auto} {int(duration_auto)+1} {startoffset_auto}&\n", 'ascii'))        
+                                        #send_command(bytearray(f"sudo /home/root/adc4bits/libiio/build/examples/GPIO_RR replay {path_auto}{filename_auto} {int(duration_auto)+1} {startoffset_auto}&\n", 'ascii'))        
                                         pass
                                     else:
                                         replayed_time = False
@@ -8136,7 +8139,7 @@ class Ui_MainWindow(object):
                                 self.rtcm_replay_command(file_command, self.autoreplay, start_time_in_sec, duration_in_sec)
 
                             if comport_is_active: 
-                                ser.write(bytearray(final_string_replay,'ascii'))
+                                send_command(bytearray(final_string_replay,'ascii'))
                                 self.worker.running = True  # Ensure the thread runs when started
                                 self.worker.start()
                                 replaying_thread = threading.Thread(target=check_replaying)
@@ -8439,7 +8442,7 @@ class Ui_MainWindow(object):
                                     msg_box_compare.setDefaultButton(QMessageBox.StandardButton.Yes)
                                     reply_ = msg_box_compare.exec()
                                     if reply_ == QMessageBox.StandardButton.Yes: 
-                                        #ser.write(bytearray(f"sudo /home/root/adc4bits/libiio/build/examples/GPIO_RR replay {path_auto}{filename_auto} {int(duration_auto)+1} {startoffset_auto}&\n", 'ascii'))                
+                                        #send_command(bytearray(f"sudo /home/root/adc4bits/libiio/build/examples/GPIO_RR replay {path_auto}{filename_auto} {int(duration_auto)+1} {startoffset_auto}&\n", 'ascii'))                
                                         pass
                                     else:
                                         replayed_time = False
@@ -8486,7 +8489,7 @@ class Ui_MainWindow(object):
                                 startoffset_auto = start_time_in_sec
                                 #self.GPIO_record_replay(Lg_path, f"{real_File_name}.gpio", duration_in_sec, start_time_in_sec)
                                 #self.GPIO_record_replay(Lg_path, f"{real_File_name}.bin", 120)
-                                ser.write(bytearray(final_string_replay,'ascii'))
+                                send_command(bytearray(final_string_replay,'ascii'))
                                 self.worker.running = True  # Ensure the thread runs when started
                                 self.worker.start()
                                 replaying_thread = threading.Thread(target=check_replaying)
@@ -8753,14 +8756,14 @@ class Ui_MainWindow(object):
                 print(device_id)
                 print(bus_no)
             ######################################################
-            #ser.write(bytearray(f'cd /home/root/\n', 'ascii'))
-            ser.write(b'\x03')
+            #send_command(bytearray(f'cd /home/root/\n', 'ascii'))
+            send_command(b'\x03')
             with open(file_path, 'a') as file:
                 file.write(f'\n{get_current_datetime()}   b"\\x03"\n')
-            #ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/command_set01.sh\n', 'ascii'))
+            #send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/command_set01.sh\n', 'ascii'))
             comport_is_active = comport_is_On(self.comport)
             if comport_is_active: 
-                ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/command_set01.sh ; /home/root/adc4bits/libiio/command_set01.sh ; (echo END) > /dev/null\n', 'ascii'))
+                send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/command_set01.sh ; /home/root/adc4bits/libiio/command_set01.sh ; (echo END) > /dev/null\n', 'ascii'))
                 if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/command_set01.sh ; /home/root/adc4bits/libiio/command_set01.sh ; (echo END) > /dev/null\n')
@@ -9008,8 +9011,8 @@ class Ui_MainWindow(object):
                 print("RFMD mode selected")
                 comport_is_active = comport_is_On(self.comport)
                 if comport_is_active:
-                    ser.write(bytearray("devmem 0xB0000000 w 8\n",'ascii'))
-                    ser.write(bytearray("/home/root/adc4bits/libiio/build/utils/iio_reg ad9361-phy 0x0A 0x10\n",'ascii'))
+                    send_command(bytearray("devmem 0xB0000000 w 8\n",'ascii'))
+                    send_command(bytearray("/home/root/adc4bits/libiio/build/utils/iio_reg ad9361-phy 0x0A 0x10\n",'ascii'))
                     with open(file_path, 'a') as file:
                         file.write(f"{get_current_datetime()}   devmem 0xB0000000 w 8\n")
                         file.write(f"{get_current_datetime()}   /home/root/adc4bits/libiio/build/utils/iio_reg ad9361-phy 0x0A 0x10\n")
@@ -9017,8 +9020,8 @@ class Ui_MainWindow(object):
                 print("RFMD mode not selected")
                 comport_is_active = comport_is_On(self.comport)
                 if comport_is_active:
-                    ser.write(bytearray("devmem 0xB0000000 w 0\n",'ascii'))
-                    ser.write(bytearray("/home/root/adc4bits/libiio/build/utils/iio_reg ad9361-phy 0x0A 0xa\n",'ascii'))
+                    send_command(bytearray("devmem 0xB0000000 w 0\n",'ascii'))
+                    send_command(bytearray("/home/root/adc4bits/libiio/build/utils/iio_reg ad9361-phy 0x0A 0xa\n",'ascii'))
                     with open(file_path, 'a') as file:
                         file.write(f"{get_current_datetime()}   devmem 0xB0000000 w 0\n")
                         file.write(f"{get_current_datetime()}   /home/root/adc4bits/libiio/build/utils/iio_reg ad9361-phy 0x0A 0xa\n")
@@ -9044,7 +9047,7 @@ class Ui_MainWindow(object):
         if selected_reboot == QMessageBox.StandardButton.Yes:
             comport_is_active = comport_is_On(self.comport)
             if comport_is_active: 
-                ser.write(bytearray(shutdown_command,'ascii'))   
+                send_command(bytearray(shutdown_command,'ascii'))   
                 if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f"\n{get_current_datetime()}   {shutdown_command}") 
@@ -9107,7 +9110,7 @@ class Ui_MainWindow(object):
         if selected_reboot == QMessageBox.StandardButton.Yes:
             comport_is_active = comport_is_On(self.comport)
             if comport_is_active: 
-                ser.write(bytearray(reboot_command,'ascii'))   
+                send_command(bytearray(reboot_command,'ascii'))   
                 if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f"\n{get_current_datetime()}   {reboot_command}")
@@ -9171,7 +9174,7 @@ class Ui_MainWindow(object):
             self.update_com_ports_rtcm()
             comport_is_active = comport_is_On(self.comport)
             if comport_is_active: 
-                ser.write(bytearray(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n', 'ascii'))
+                send_command(bytearray(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n', 'ascii'))
                 if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n')
@@ -9251,7 +9254,7 @@ class Ui_MainWindow(object):
                             if (HW_USB_in_use):
                                 comport_is_active = comport_is_On(self.comport)
                                 if comport_is_active: 
-                                    ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                                    send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                             else:
@@ -9262,7 +9265,7 @@ class Ui_MainWindow(object):
                         count_one_replay = 0
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(b'\x03')
+                            send_command(b'\x03')
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   \x03')
@@ -9309,7 +9312,7 @@ class Ui_MainWindow(object):
                                 self.lineEdit_Gain_Tx_2.setEnabled(True)
                         self.update_time_1()
                         
-                        #ser.write(bytearray("kill -SIGINT $(ps -uax | grep ad9361-ii | awk -F' ' '{ print $2 }')\n",'ascii'))
+                        #send_command(bytearray("kill -SIGINT $(ps -uax | grep ad9361-ii | awk -F' ' '{ print $2 }')\n",'ascii'))
                         #ser.close()
         else:
             msg_box_9 = QMessageBox()
@@ -9359,7 +9362,7 @@ class Ui_MainWindow(object):
                     if (HW_USB_in_use):
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                            send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
                                 file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                     else:
@@ -9412,7 +9415,7 @@ class Ui_MainWindow(object):
                     if (HW_USB_in_use):
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                            send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
                                 file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                     else:
@@ -9441,7 +9444,7 @@ class Ui_MainWindow(object):
                                 if (HW_USB_in_use):
                                     comport_is_active = comport_is_On(self.comport)
                                     if comport_is_active: 
-                                        ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                                        send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                                 else:
@@ -9490,7 +9493,7 @@ class Ui_MainWindow(object):
                                 if (HW_USB_in_use):
                                     comport_is_active = comport_is_On(self.comport)
                                     if comport_is_active: 
-                                        ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                                        send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                                 else:
@@ -9782,7 +9785,7 @@ class Ui_MainWindow(object):
                 command = check_command(current_path)
                 comport_is_active = comport_is_On(self.comport)
                 if comport_is_active: 
-                    ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n', 'ascii'))
+                    send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n', 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n')
@@ -9934,7 +9937,7 @@ class Ui_MainWindow(object):
                     if back_btn_clicked:
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray(f'pwd ; (echo END) > /dev/null\n', 'ascii'))
+                            send_command(bytearray(f'pwd ; (echo END) > /dev/null\n', 'ascii'))
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   pwd ; (echo END) > /dev/null\n')
@@ -9962,7 +9965,7 @@ class Ui_MainWindow(object):
                         comport_is_active = comport_is_On(self.comport)
                         print(current_path)
                         command = check_command(current_path)
-                        ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n', 'ascii'))
+                        send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n')
@@ -9973,7 +9976,7 @@ class Ui_MainWindow(object):
                         comport_is_active = comport_is_On(self.comport)
                         command = check_command(current_path)
                         if comport_is_active: 
-                            ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n', 'ascii'))
+                            send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n', 'ascii'))
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n')
@@ -10130,7 +10133,7 @@ class Ui_MainWindow(object):
                                 
                                 comport_is_active = comport_is_On(self.comport)
                                 if comport_is_active: 
-                                    ser.write(bytearray(f'mkdir "{variable}" ; (echo END) > /dev/null\n', 'ascii'))
+                                    send_command(bytearray(f'mkdir "{variable}" ; (echo END) > /dev/null\n', 'ascii'))
                                     if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   mkdir "{current_path}{folder_name}" ; (echo END) > /dev/null\n')
@@ -10220,7 +10223,7 @@ class Ui_MainWindow(object):
                                 print(new_folder_name)
                                 if comport_is_active:
                                     # Use the 'mv' command for renaming
-                                    ser.write(bytearray(f'mv "{current_path}{selected_folder}" "{current_path}{new_folder_name}"\n', 'ascii'))
+                                    send_command(bytearray(f'mv "{current_path}{selected_folder}" "{current_path}{new_folder_name}"\n', 'ascii'))
                                     if Commands_file_user:
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   mv "{current_path}{selected_folder}" "{current_path}{new_folder_name}"\n{get_current_datetime()}   pwd\n')
@@ -10250,7 +10253,7 @@ class Ui_MainWindow(object):
                                 ###################################################################################
                                 if comport_is_active:
                                         # Use the 'mv' command for renaming
-                                        ser.write(bytearray(f'cat "{read_selected_file_path}{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
+                                        send_command(bytearray(f'cat "{read_selected_file_path}{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   cat "{read_selected_file_path}{filename_txt}" ; (echo END) > /dev/null\n')
@@ -10287,7 +10290,7 @@ class Ui_MainWindow(object):
                                         comport_is_active = comport_is_On(self.comport)
 
                                         if comport_is_active:
-                                            ser.write(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
+                                            send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
                                             if Commands_file_user:
                                                 with open(file_path, 'a') as file:
                                                             file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
@@ -10300,7 +10303,7 @@ class Ui_MainWindow(object):
                                             return
                                         
                                         if comport_is_active:
-                                            ser.write(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt} && \ \necho "selected_files: {line_needs_to_be_added}" >> {filename_txt}\n', 'ascii'))
+                                            send_command(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt} && \ \necho "selected_files: {line_needs_to_be_added}" >> {filename_txt}\n', 'ascii'))
                                             if Commands_file_user:
                                                 with open(file_path, 'a') as file:
                                                     file.write(f'\n{get_current_datetime()}   sed -i "/{line_to_edit}/d" {filename_txt} && \ \necho "selected_files: {line_needs_to_be_added}" >> {filename_txt}\n')
@@ -10336,7 +10339,7 @@ class Ui_MainWindow(object):
                                 comport_is_active = comport_is_On(self.comport)
         
                                 if comport_is_active: 
-                                    ser.write(bytearray(f'rm -r "{current_path}{selected_folder}" ; pwd\n', 'ascii'))
+                                    send_command(bytearray(f'rm -r "{current_path}{selected_folder}" ; pwd\n', 'ascii'))
                                     if Commands_file_user:
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   rm -r "{current_path}{selected_folder}" ; pwd\n')
@@ -10480,7 +10483,7 @@ class Ui_MainWindow(object):
         QApplication.processEvents()  # Force UI update
 
         if comport_is_On(self.comport):   
-            ser.write(bytearray(f'cd /home/root/adc4bits/libiio/build/ && cmake ../ -DWITH_EXAMPLES=ON -DWITH_ZSTD=OFF && make clean && make -j4\n', 'ascii'))
+            send_command(bytearray(f'cd /home/root/adc4bits/libiio/build/ && cmake ../ -DWITH_EXAMPLES=ON -DWITH_ZSTD=OFF && make clean && make -j4\n', 'ascii'))
 
             if Commands_file_user:
                 with open(file_path, 'a') as file:
@@ -10563,7 +10566,7 @@ class Ui_MainWindow(object):
         global download
         comport_is_active = comport_is_On(self.comport)
         if comport_is_active:   
-                    ser.write(bytearray(f'cd /home/root/adc4bits/libiio/build/ && cmake ../ -DWITH_EXAMPLES=ON -DWITH_ZSTD=OFF && make clean && make -j4\n', 'ascii'))
+                    send_command(bytearray(f'cd /home/root/adc4bits/libiio/build/ && cmake ../ -DWITH_EXAMPLES=ON -DWITH_ZSTD=OFF && make clean && make -j4\n', 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cd /home/root/adc4bits/libiio/build/ && cmake ../ -DWITH_EXAMPLES=ON -DWITH_ZSTD=OFF && make clean && make -j4\n')
@@ -10622,7 +10625,7 @@ class Ui_MainWindow(object):
         global flag_raised
         comport_is_active = comport_is_On(self.comport)
         if comport_is_active: 
-            ser.write(bytearray(f'lsblk ; (echo END) > /dev/null\n', 'ascii'))
+            send_command(bytearray(f'lsblk ; (echo END) > /dev/null\n', 'ascii'))
             if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'\n{get_current_datetime()}   lsblk ; (echo END) > /dev/null\n')
@@ -10701,7 +10704,7 @@ class Ui_MainWindow(object):
         command = check_command(directory)
         comport_is_active = comport_is_On(self.comport)
         if comport_is_active: 
-            ser.write(bytearray(f'cd {command}\n', 'ascii'))
+            send_command(bytearray(f'cd {command}\n', 'ascii'))
             if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -10718,7 +10721,7 @@ class Ui_MainWindow(object):
         actual_nvme = check_command(nvmelabel_file)
         actual_filename = check_command(filename_txt)
         if comport_is_active:                    
-            ser.write(bytearray(f'cat {actual_nvme}\n', 'ascii'))
+            send_command(bytearray(f'cat {actual_nvme}\n', 'ascii'))
             if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cat {actual_nvme}\n')
@@ -10763,7 +10766,7 @@ class Ui_MainWindow(object):
                         comport_is_active = comport_is_On(self.comport)
                         command = check_command(read_selected_file_path)
                         if comport_is_active: 
-                            ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                            send_command(bytearray(f'cd {command}\n', 'ascii'))
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -10779,7 +10782,7 @@ class Ui_MainWindow(object):
                         actual_nvme = check_command(nvmelabel_file)
                         actual_filename = check_command(filename_txt)
                         if comport_is_active: 
-                            ser.write(bytearray(f'sed -i "/^fs_system:/d" {actual_nvme}\n', 'ascii'))
+                            send_command(bytearray(f'sed -i "/^fs_system:/d" {actual_nvme}\n', 'ascii'))
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f'\n{get_current_datetime()}   sed -i "/^fs_system:/d" {actual_nvme}\n')
@@ -10793,7 +10796,7 @@ class Ui_MainWindow(object):
 
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray(f"sed -i '/^$/d' {actual_nvme}\n", 'ascii'))
+                            send_command(bytearray(f"sed -i '/^$/d' {actual_nvme}\n", 'ascii'))
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f"\n{get_current_datetime()}   sed -i '/^$/d' {actual_nvme}\n")
@@ -10807,7 +10810,7 @@ class Ui_MainWindow(object):
                         new_lines = f"fs_system: {fs_system}"
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray(f"echo '{new_lines}'>>{actual_nvme}\n", 'ascii'))
+                            send_command(bytearray(f"echo '{new_lines}'>>{actual_nvme}\n", 'ascii'))
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f"\n{get_current_datetime()}   echo '{new_lines}'>>{actual_nvme}\n")
@@ -10825,7 +10828,7 @@ class Ui_MainWindow(object):
                     comport_is_active = comport_is_On(self.comport)
                     command = check_command(directory)
                     if comport_is_active: 
-                        ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                        send_command(bytearray(f'cd {command}\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'{get_current_datetime()}   cd {command}\n')
@@ -10841,7 +10844,7 @@ class Ui_MainWindow(object):
                     actual_nvme = check_command(nvmelabel_file)
                     actual_filename = check_command(filename_txt)
                     if comport_is_active: 
-                        ser.write(bytearray(f'touch {actual_nvme}\n', 'ascii'))
+                        send_command(bytearray(f'touch {actual_nvme}\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'{get_current_datetime()}   touch {actual_nvme}\n')
@@ -10857,7 +10860,7 @@ class Ui_MainWindow(object):
                     tx_rx_file_content = f"\nRx: {executable_rx}\nTx: {executable_tx}"
                     comport_is_active = comport_is_On(self.comport)
                     if comport_is_active: 
-                        ser.write(bytearray(f'echo  "{text_file_content}">> {actual_nvme}\n', 'ascii'))
+                        send_command(bytearray(f'echo  "{text_file_content}">> {actual_nvme}\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'{get_current_datetime()}   echo  "{text_file_content}">> {actual_nvme}\n')
@@ -10874,7 +10877,7 @@ class Ui_MainWindow(object):
                     ###############################################################################################
                     comport_is_active = comport_is_On(self.comport)
                     if comport_is_active: 
-                        ser.write(bytearray(f'echo  "{tx_rx_file_content}">> {actual_nvme}\n', 'ascii'))
+                        send_command(bytearray(f'echo  "{tx_rx_file_content}">> {actual_nvme}\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'{get_current_datetime()}   echo  "{tx_rx_file_content}">> {actual_nvme}\n')
@@ -10891,7 +10894,7 @@ class Ui_MainWindow(object):
                     developer_tx_rx_content = f"\nDRx: {developer_executable_rx}\nDTx: {developer_executable_tx}"
                     comport_is_active = comport_is_On(self.comport)
                     if comport_is_active: 
-                        ser.write(bytearray(f'echo  "{developer_tx_rx_content}">> {actual_nvme}\n', 'ascii'))
+                        send_command(bytearray(f'echo  "{developer_tx_rx_content}">> {actual_nvme}\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'{get_current_datetime()}   echo  "{developer_tx_rx_content}">> {actual_nvme}\n')
@@ -11105,7 +11108,7 @@ class Ui_MainWindow(object):
         actual_filename = check_command(filename_txt)
         command = check_command(read_selected_file_path)
         if comport_is_active: 
-            ser.write(bytearray(f'cd {command}\n', 'ascii'))
+            send_command(bytearray(f'cd {command}\n', 'ascii'))
             if Commands_file_user:
                 with open(file_path, 'a') as file:
                     file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -11114,7 +11117,7 @@ class Ui_MainWindow(object):
             return
         comport_is_active = comport_is_On(self.comport)
         if comport_is_active:                       
-            ser.write(bytearray(f'cat {actual_nvme}\n', 'ascii'))
+            send_command(bytearray(f'cat {actual_nvme}\n', 'ascii'))
             if Commands_file_user:
                 with open(file_path, 'a') as file:
                     file.write(f'\n{get_current_datetime()}   cat {actual_nvme}\n')
@@ -11245,7 +11248,7 @@ class Ui_MainWindow(object):
             actual_nvme = check_command(nvmelabel_file)
             actual_filename = check_command(filename_txt)
             if comport_is_active: 
-                ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                send_command(bytearray(f'cd {command}\n', 'ascii'))
                 if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -11260,7 +11263,7 @@ class Ui_MainWindow(object):
                 return
             comport_is_active = comport_is_On(self.comport)
             if comport_is_active:                      
-                ser.write(bytearray(f'cat {actual_nvme}\n', 'ascii'))
+                send_command(bytearray(f'cat {actual_nvme}\n', 'ascii'))
                 if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f'\n{get_current_datetime()}   cat {actual_nvme}\n')
@@ -11310,7 +11313,7 @@ class Ui_MainWindow(object):
                                     comport_is_active = comport_is_On(self.comport)
                                     command = check_command(read_selected_file_path)
                                     if comport_is_active: 
-                                        ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                                        send_command(bytearray(f'cd {command}\n', 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -11325,7 +11328,7 @@ class Ui_MainWindow(object):
                                     actual_nvme = check_command(nvmelabel_file)
                                     actual_filename = check_command(filename_txt)
                                     if comport_is_active: 
-                                        ser.write(bytearray(f'sed -i "/^DRx\|^DTx/d" {actual_nvme}\n', 'ascii'))
+                                        send_command(bytearray(f'sed -i "/^DRx\|^DTx/d" {actual_nvme}\n', 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   sed -i "/^DRx\|^DTx/d" {actual_nvme}\n')
@@ -11341,7 +11344,7 @@ class Ui_MainWindow(object):
                                     new_lines = f"\nDRx: {developer_executable_rx}\nDTx: {developer_executable_tx}"
                                     comport_is_active = comport_is_On(self.comport)
                                     if comport_is_active: 
-                                        ser.write(bytearray(f'echo "{new_lines}">>{actual_nvme}\n', 'ascii'))
+                                        send_command(bytearray(f'echo "{new_lines}">>{actual_nvme}\n', 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   echo "{new_lines}">>{actual_nvme}\n')
@@ -11355,7 +11358,7 @@ class Ui_MainWindow(object):
                                     response = ser.readlines(ser.in_waiting)
                                     comport_is_active = comport_is_On(self.comport)
                                     if comport_is_active: 
-                                        ser.write(bytearray(f"sed -i '/^$/d' {actual_nvme}\n", 'ascii'))
+                                        send_command(bytearray(f"sed -i '/^$/d' {actual_nvme}\n", 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f"\n{get_current_datetime()}   sed -i '/^$/d' {actual_nvme}\n")
@@ -11593,12 +11596,12 @@ class Ui_MainWindow(object):
                 comport_is_active = comport_is_On(self.comport)
                 if comport_is_active: 
                     if not (browse_file_for_HWUSB):
-                        ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command}; (echo END) > /dev/null\n', 'ascii'))
+                        send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command}; (echo END) > /dev/null\n', 'ascii'))
                         with open(file_path, 'a') as file:
                             file.write(f"\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command}; (echo END) > /dev/null\n")
                     else:
                         
-                        ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode rtcm; (echo END) > /dev/null\n', 'ascii'))
+                        send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode rtcm; (echo END) > /dev/null\n', 'ascii'))
                         with open(file_path, 'a') as file:
                             file.write(f"\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode rtcm; (echo END) > /dev/null\n")
                     if Commands_file_user:
@@ -11765,11 +11768,11 @@ class Ui_MainWindow(object):
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
                             if browse_file_for_HWUSB:
-                                ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command}; (echo END) > /dev/null\n', 'ascii'))
+                                send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command}; (echo END) > /dev/null\n', 'ascii'))
                                 with open(file_path, 'a') as file:
                                     file.write(f"\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command}; (echo END) > /dev/null\n")
                             else:
-                                ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode rtcm; (echo END) > /dev/null\n', 'ascii'))
+                                send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode rtcm; (echo END) > /dev/null\n', 'ascii'))
                                 with open(file_path, 'a') as file:
                                     file.write(f"\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode rtcm; (echo END) > /dev/null\n")
                             if Commands_file_user:
@@ -11794,11 +11797,11 @@ class Ui_MainWindow(object):
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
                             if not (browse_file_for_HWUSB):
-                                ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {current_path_1}; (echo END) > /dev/null\n', 'ascii'))
+                                send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {current_path_1}; (echo END) > /dev/null\n', 'ascii'))
                                 with open(file_path, 'a') as file:
                                     file.write(f"\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {current_path_1}; (echo END) > /dev/null\n")
                             else:
-                                ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {current_path_1} --mode rtcm; (echo END) > /dev/null\n', 'ascii'))
+                                send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {current_path_1} --mode rtcm; (echo END) > /dev/null\n', 'ascii'))
                                 with open(file_path, 'a') as file:
                                     file.write(f"\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {current_path_1} --mode rtcm; (echo END) > /dev/null\n")
                             if Commands_file_user:
@@ -11858,7 +11861,7 @@ class Ui_MainWindow(object):
                                 commond = check_command(filename_2)
                                 comport_is_active = comport_is_On(self.comport)
                                 if comport_is_active:
-                                    ser.write(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --mode contents --file {current_path}/{filename_2}; (echo END) > /dev/null\n', 'ascii'))
+                                    send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --mode contents --file {current_path}/{filename_2}; (echo END) > /dev/null\n', 'ascii'))
                                     with open(file_path, 'a') as file:
                                         file.write(f"\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --mode contents --file {current_path}/{filename_2}; (echo END) > /dev/null\n")
                                     if Commands_file_user:
@@ -12425,7 +12428,7 @@ class Ui_MainWindow(object):
                             command = check_command(directory)
                             comport_is_active = comport_is_On(self.comport)
                             if comport_is_active: 
-                                ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                                send_command(bytearray(f'cd {command}\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -12438,7 +12441,7 @@ class Ui_MainWindow(object):
                                 return
                             comport_is_active = comport_is_On(self.comport)
                             if comport_is_active: 
-                                ser.write(bytearray(f'ls -l\n', 'ascii'))
+                                send_command(bytearray(f'ls -l\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   ls -l\n')
@@ -12557,7 +12560,7 @@ class Ui_MainWindow(object):
                             comport_is_active = comport_is_On(self.comport)
                             command = check_command(directory)
                             if comport_is_active: 
-                                ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                                send_command(bytearray(f'cd {command}\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -12570,7 +12573,7 @@ class Ui_MainWindow(object):
                                 return
                             comport_is_active = comport_is_On(self.comport)
                             if comport_is_active: 
-                                ser.write(bytearray(f'ls -l\n', 'ascii'))
+                                send_command(bytearray(f'ls -l\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   ls -l\n')
@@ -12727,7 +12730,7 @@ class Ui_MainWindow(object):
                             comport_is_active = comport_is_On(self.comport)
                             command = check_command(directory)
                             if comport_is_active: 
-                                ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                                send_command(bytearray(f'cd {command}\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -12740,7 +12743,7 @@ class Ui_MainWindow(object):
                                 return
                             comport_is_active = comport_is_On(self.comport)
                             if comport_is_active: 
-                                ser.write(bytearray(f'ls -l\n', 'ascii'))
+                                send_command(bytearray(f'ls -l\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   ls -l\n')
@@ -12920,7 +12923,7 @@ class Ui_MainWindow(object):
                                 comport_is_active = comport_is_On(self.comport)
                                 command = check_command(directory)
                                 if comport_is_active: 
-                                    ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                                    send_command(bytearray(f'cd {command}\n', 'ascii'))
                                     if Commands_file_user:
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -12934,7 +12937,7 @@ class Ui_MainWindow(object):
                                 comport_is_active = comport_is_On(self.comport)
                                 selected_file_actual = check_command(filename_txt)
                                 if comport_is_active: 
-                                    ser.write(bytearray(f'cat {selected_file_actual}\n', 'ascii'))
+                                    send_command(bytearray(f'cat {selected_file_actual}\n', 'ascii'))
                                     if Commands_file_user:
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   cat {selected_file_actual}\n')
@@ -12957,7 +12960,7 @@ class Ui_MainWindow(object):
                                 comport_is_active = comport_is_On(self.comport)
                                 command = check_command(directory)
                                 if comport_is_active: 
-                                    ser.write(bytearray(f'cd {command}\n', 'ascii'))
+                                    send_command(bytearray(f'cd {command}\n', 'ascii'))
                                     if Commands_file_user:
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   cd {command}\n')
@@ -12971,7 +12974,7 @@ class Ui_MainWindow(object):
                                 comport_is_active = comport_is_On(self.comport)
                                 
                                 if comport_is_active: 
-                                    ser.write(bytearray(f'echo "{new_lines}">>{filename_txt}\n', 'ascii'))
+                                    send_command(bytearray(f'echo "{new_lines}">>{filename_txt}\n', 'ascii'))
                                     if Commands_file_user:
                                         with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   echo "{new_lines}">>{filename_txt}\n')
@@ -13088,7 +13091,7 @@ class Ui_MainWindow(object):
                                     comport_is_active = comport_is_On(self.comport)
                                     if comport_is_active:
                                         # Use the 'mv' command for renaming
-                                        ser.write(bytearray(f'mv "{current_path}{selected_folder}" "{current_path}{new_folder_name}"\n', 'ascii'))
+                                        send_command(bytearray(f'mv "{current_path}{selected_folder}" "{current_path}{new_folder_name}"\n', 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   mv "{current_path}{selected_folder}" "{current_path}{new_folder_name}"\n')
@@ -13117,7 +13120,7 @@ class Ui_MainWindow(object):
                                     
                                     if comport_is_active:
                                         # Use the 'mv' command for renaming
-                                        ser.write(bytearray(f'cat "{read_selected_file_path}{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
+                                        send_command(bytearray(f'cat "{read_selected_file_path}{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   cat "{read_selected_file_path}{filename_txt}"\n')
@@ -13156,7 +13159,7 @@ class Ui_MainWindow(object):
                                         comport_is_active = comport_is_On(self.comport)
 
                                         if comport_is_active:
-                                            ser.write(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
+                                            send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
                                             if Commands_file_user:
                                                 with open(file_path, 'a') as file:
                                                             file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
@@ -13169,7 +13172,7 @@ class Ui_MainWindow(object):
                                             return
                                         
                                         if comport_is_active:
-                                            ser.write(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt} && \ \necho "selected_files: {line_needs_to_be_added}" >> {filename_txt}\n', 'ascii'))
+                                            send_command(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt} && \ \necho "selected_files: {line_needs_to_be_added}" >> {filename_txt}\n', 'ascii'))
                                             if Commands_file_user:
                                                 with open(file_path, 'a') as file:
                                                     file.write(f'\n{get_current_datetime()}   sed -i "/{line_to_edit}/d" {filename_txt} && \ \necho "selected_files: {line_needs_to_be_added}" >> {filename_txt}\n')
@@ -13211,7 +13214,7 @@ class Ui_MainWindow(object):
                                     check_selected_folder_2 = str(selected_folder).split(".bin")[0]
                                     if comport_is_active:
                                         # Use the 'mv' command for renaming
-                                        ser.write(bytearray(f'mv "{current_path}{selected_folder}" "{current_path}{new_folder_name}.bin" && \ \nmv "{current_path}{check_selected_folder_2}.log" "{current_path}{new_folder_name}.log"\n', 'ascii'))
+                                        send_command(bytearray(f'mv "{current_path}{selected_folder}" "{current_path}{new_folder_name}.bin" && \ \nmv "{current_path}{check_selected_folder_2}.log" "{current_path}{new_folder_name}.log"\n', 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   mv "{current_path}{selected_folder}" "{current_path}{new_folder_name}.bin" && \ \nmv "{current_path}{check_selected_folder_2}.log" "{current_path}{new_folder_name}.log"\n')
@@ -13237,7 +13240,7 @@ class Ui_MainWindow(object):
                                     
                                     if comport_is_active:
                                         # Use the 'mv' command for renaming
-                                        ser.write(bytearray(f'cat "{read_selected_file_path}{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
+                                        send_command(bytearray(f'cat "{read_selected_file_path}{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   cat "{read_selected_file_path}{filename_txt}"\n')
@@ -13272,7 +13275,7 @@ class Ui_MainWindow(object):
                                         comport_is_active = comport_is_On(self.comport)
 
                                         if comport_is_active:
-                                            ser.write(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
+                                            send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
                                             if Commands_file_user:
                                                 with open(file_path, 'a') as file:
                                                             file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
@@ -13285,7 +13288,7 @@ class Ui_MainWindow(object):
                                             return
                                         
                                         if comport_is_active:
-                                            ser.write(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt} && \ \necho "selected_files: {current_path}{new_folder_name}" >> {filename_txt}\n', 'ascii'))
+                                            send_command(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt} && \ \necho "selected_files: {current_path}{new_folder_name}" >> {filename_txt}\n', 'ascii'))
                                             if Commands_file_user:
                                                 with open(file_path, 'a') as file:
                                                     file.write(f'\n{get_current_datetime()}   sed -i "/{line_to_edit}/d" {filename_txt} && \ \necho "selected_files: {current_path}{new_folder_name}" >> {filename_txt}\n')
@@ -13335,7 +13338,7 @@ class Ui_MainWindow(object):
                                         #print(f"Deleting folder: {selected_folder}")  # Placeholder action
                                         comport_is_active = comport_is_On(self.comport)
                                         if comport_is_active: 
-                                            ser.write(bytearray(f'rm "{current_path}{selected_folder[:-4]}"*\n', 'ascii'))
+                                            send_command(bytearray(f'rm "{current_path}{selected_folder[:-4]}"*\n', 'ascii'))
                                             if Commands_file_user:
                                                 with open(file_path, 'a') as file:
                                                     file.write(f'\n{get_current_datetime()}   rm "{current_path}{selected_folder[:-4]}"*\n')
@@ -13353,7 +13356,7 @@ class Ui_MainWindow(object):
                                     comport_is_active = comport_is_On(self.comport)
 
                                     if comport_is_active:
-                                        ser.write(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
+                                        send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   "cd {read_selected_file_path}"\n')
@@ -13366,7 +13369,7 @@ class Ui_MainWindow(object):
                                         return
                                                 
                                     if comport_is_active:
-                                        ser.write(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt}\n', 'ascii'))
+                                        send_command(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt}\n', 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f'\n{get_current_datetime()}   sed -i "/{line_to_edit}/d" {filename_txt}\n')
@@ -13394,7 +13397,7 @@ class Ui_MainWindow(object):
                                         selected_folder = str(selected_folder).split("(d)  ")[1]
                                         comport_is_active = comport_is_On(self.comport)
                                         if comport_is_active: 
-                                            ser.write(bytearray(f'rm -r "{current_path}{selected_folder}"\npwd\n', 'ascii'))
+                                            send_command(bytearray(f'rm -r "{current_path}{selected_folder}"\npwd\n', 'ascii'))
                                             if Commands_file_user:
                                                 print(current_path)
                                                 with open(file_path, 'a') as file:
@@ -13957,7 +13960,7 @@ class Ui_MainWindow(object):
                 #######################################################################
                 """comport_is_active = comport_is_On(self.comport)
                 if comport_is_active: 
-                    ser.write(b'\x03')
+                    send_command(b'\x03')
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   \x03')
@@ -13970,7 +13973,7 @@ class Ui_MainWindow(object):
                     return
                 comport_is_active = comport_is_On(self.comport)
                 if comport_is_active: 
-                    ser.write(bytearray('clear\n', 'ascii'))
+                    send_command(bytearray('clear\n', 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   clear\n')
@@ -13999,7 +14002,7 @@ class Ui_MainWindow(object):
                 """comport_is_active = comport_is_On(self.comport)
                 
                 if comport_is_active:   
-                    ser.write(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
+                    send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
@@ -14014,7 +14017,7 @@ class Ui_MainWindow(object):
                 comport_is_active = comport_is_On(self.comport)
 
                 if comport_is_active:               
-                    ser.write(bytearray(f'cat "{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
+                    send_command(bytearray(f'cat "{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cat "{filename_txt}" ; (echo END) > /dev/null\n')
@@ -14093,7 +14096,7 @@ class Ui_MainWindow(object):
                     command_file_read = "; ".join(command_parts) + ' ; (echo END) > /dev/null\n'
                     print(command_file_read)
                     #print(command_file_read)
-                    ser.write(bytearray(command_file_read, 'ascii'))
+                    send_command(bytearray(command_file_read, 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}  {command_file_read}')
@@ -14118,7 +14121,7 @@ class Ui_MainWindow(object):
                             comport_is_active = comport_is_On(self.comport)
 
                             if comport_is_active:
-                                ser.write(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
+                                send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
@@ -14131,7 +14134,7 @@ class Ui_MainWindow(object):
                                 return
                                         
                             if comport_is_active:
-                                ser.write(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt}\n', 'ascii'))
+                                send_command(bytearray(f'sed -i "/{line_to_edit}/d" {filename_txt}\n', 'ascii'))
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   sed -i "/{line_to_edit}/d" {filename_txt}\n')
@@ -14155,7 +14158,7 @@ class Ui_MainWindow(object):
                     comport_is_active = comport_is_On(self.comport)
                     
                     if comport_is_active: 
-                        ser.write(bytearray(f'cd "{directory}"\n', 'ascii'))
+                        send_command(bytearray(f'cd "{directory}"\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'{get_current_datetime()}   cd "{directory}"\n')
@@ -14169,7 +14172,7 @@ class Ui_MainWindow(object):
                     comport_is_active = comport_is_On(self.comport)
                    
                     if comport_is_active: 
-                        ser.write(bytearray(f'touch "{filename_txt}"\n', 'ascii'))
+                        send_command(bytearray(f'touch "{filename_txt}"\n', 'ascii'))
                         if Commands_file_user:
                             with open(file_path, 'a') as file:
                                 file.write(f'{get_current_datetime()}   touch "{filename_txt}"\n')
@@ -14933,7 +14936,7 @@ class Ui_MainWindow(object):
                             self.rtcm_record_command(record_folder_path)
                         if comport_is_active: 
                             self.GPIO_record_replay(Lg_path, f"{self.file_name}_{current_time}.gpio", mem_avail_time, 0)
-                            ser.write(bytearray(final_string,'ascii')) 
+                            send_command(bytearray(final_string,'ascii')) 
                             recording_thread = threading.Thread(target=check_recording)
                             recording_thread.start()  
                             if Commands_file_user:
@@ -15394,7 +15397,7 @@ class Ui_MainWindow(object):
                                 self.rtcm_record_command(record_folder_path)
                             if comport_is_active: 
                                 self.GPIO_record_replay(Lg_path, f"{self.file_name}_{current_time}.gpio", mem_avail_time, 0)
-                                ser.write(bytearray(final_string,'ascii'))   
+                                send_command(bytearray(final_string,'ascii'))   
                                 recording_thread = threading.Thread(target=check_recording)
                                 recording_thread.start() 
                                 if Commands_file_user:
@@ -15823,7 +15826,7 @@ class Ui_MainWindow(object):
                                 self.rtcm_record_command(record_folder_path)
                             if comport_is_active: 
                                 self.GPIO_record_replay(Lg_path, f"{self.file_name}_{current_time}.gpio", mem_avail_time, 0)
-                                ser.write(bytearray(final_string,'ascii')) 
+                                send_command(bytearray(final_string,'ascii')) 
                                 recording_thread = threading.Thread(target=check_recording)
                                 recording_thread.start() 
                                 if Commands_file_user:
@@ -15995,7 +15998,7 @@ class Ui_MainWindow(object):
                         self.red_light_record.setVisible(True)
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(b'\x03')
+                            send_command(b'\x03')
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                             file.write(f'\n{get_current_datetime()}   \x03')  
@@ -16010,7 +16013,7 @@ class Ui_MainWindow(object):
                             if (HW_USB_in_use):
                                 comport_is_active = comport_is_On(self.comport)
                                 if comport_is_active: 
-                                    ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                                    send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                             else:
@@ -16031,7 +16034,7 @@ class Ui_MainWindow(object):
                         
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray('clear\n', 'ascii'))
+                            send_command(bytearray('clear\n', 'ascii'))
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f'\n{get_current_datetime()}   clear\n')
@@ -16047,7 +16050,7 @@ class Ui_MainWindow(object):
                         #self.label_current_file.setText(f"{file_count+1}")
                         #self.label_current_file.setStyleSheet("color: red;") 
                         ###############################################################################################
-                        #ser.write(bytearray("kill -SIGINT $(ps -uax | grep ad9361-ii | awk -F' ' '{ print $2 }')\n",'ascii'))
+                        #send_command(bytearray("kill -SIGINT $(ps -uax | grep ad9361-ii | awk -F' ' '{ print $2 }')\n",'ascii'))
                         #ser.close()
                         
         else:
@@ -16069,12 +16072,12 @@ class Ui_MainWindow(object):
                     if HW_USB_in_use:
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                            send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
                                 file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                     else:
                         self.stop_reading()
-                #ser.write(b'\x03')  # Send Ctrl+C to stop the recording
+                #send_command(b'\x03')  # Send Ctrl+C to stop the recording
                 #print("terminated is true")
                 current_time = self.elapsed_time.toString("HH:mm:ss")
                 duration = subtract_two_times(current_time, duration_available_for_recording)
@@ -16131,7 +16134,7 @@ class Ui_MainWindow(object):
                     if HW_USB_in_use:
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                            send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
                                 file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                     else:
@@ -16153,7 +16156,7 @@ class Ui_MainWindow(object):
                     if HW_USB_in_use:
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                            send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
                                 file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                     else:
@@ -16211,7 +16214,7 @@ class Ui_MainWindow(object):
                     if HW_USB_in_use:
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                            send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
                                 file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                     else:
@@ -16232,7 +16235,7 @@ class Ui_MainWindow(object):
                     if HW_USB_in_use:
                         comport_is_active = comport_is_On(self.comport)
                         if comport_is_active: 
-                            ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                            send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
                                 file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                     else:
@@ -16240,7 +16243,7 @@ class Ui_MainWindow(object):
                 #print("time is equal")
                 file_count += 1
                 count_one = 0
-                #ser.write(b'\x03')  # Send Ctrl+C to stop the recording
+                #send_command(b'\x03')  # Send Ctrl+C to stop the recording
                 bs = ser.readlines(ser.in_waiting)
                 ########################################################################
                 #print("yes")
@@ -16286,7 +16289,7 @@ class Ui_MainWindow(object):
                             if HW_USB_in_use:
                                 comport_is_active = comport_is_On(self.comport)
                                 if comport_is_active: 
-                                    ser.write(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
+                                    send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   {disconnect_HW_USB_record_replay}\n')
                             else:
@@ -16320,7 +16323,7 @@ class Ui_MainWindow(object):
                         self.worker.stop()  # Tell the thread to stop
                         self.worker.wait()
                         self.worker.running = False
-                        #ser.write(b'\x03')  # Send Ctrl+C to stop the recording
+                        #send_command(b'\x03')  # Send Ctrl+C to stop the recording
                         self.comboBox_number_of_files.setEnabled(True)
                         """if  file_count > 1:
                             current_time = self.elapsed_time.toString("HH:mm:ss")
@@ -16372,7 +16375,7 @@ class Ui_MainWindow(object):
                 else:
                     #flag_raised_for_stop_Recording = True
                     break
-        ser.write(bytearray('clear\n', 'ascii'))
+        send_command(bytearray('clear\n', 'ascii'))
         clear_lines = ser.readlines(ser.in_waiting)
         print("clear lines are ", clear_lines)
         current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -16509,7 +16512,7 @@ class Ui_MainWindow(object):
             self.rtcm_record_command(record_folder_path)
         if comport_is_active: 
             self.GPIO_record_replay(Lg_path, f"{self.file_name}_{current_time}.gpio", duration, 0)
-            ser.write(bytearray(final_string,'ascii'))   
+            send_command(bytearray(final_string,'ascii'))   
             recording_thread = threading.Thread(target=check_recording)
             recording_thread.start()
             if Commands_file_user:
@@ -16736,13 +16739,13 @@ class MainWindowWithCloseEvent(QtWidgets.QMainWindow):
         if not ser == None:
                 comport_is_active = comport_is_On(active_comport_used)
                 if comport_is_active and comport_connected: 
-                    ser.write(bytearray(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n', 'ascii'))
+                    send_command(bytearray(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n', 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n')
                 comport_is_active = comport_is_On(active_comport_used)
                 if comport_is_active and comport_connected: 
-                    ser.write(b'\x03')
+                    send_command(b'\x03')
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   \x03')
