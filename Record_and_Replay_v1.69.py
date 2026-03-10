@@ -1631,6 +1631,10 @@ class Ui_MainWindow(object):
                                             border: 2px solid #2E5;
                                         }
                                     """)
+        self.lineEdit_ssid.setVisible(False)
+        self.lineEdit_password.setVisible(False)
+        self.label_password.setVisible(False)
+        self.label_ssid.setVisible(False)
 
 
         self.label_ref_freq = QtWidgets.QLabel(self.frame)
@@ -4247,6 +4251,7 @@ class Ui_MainWindow(object):
         self.radioButton_Rx_1.setVisible(False)
         self.radioButton_Rx_2.setVisible(False)
         self.comboBox_comport_rtcm.currentIndexChanged.connect(self.on_rtcm_dropdown)
+        self.comboBox_comport.currentIndexChanged.connect(self.on_comport_dropdown)
         self.comboBox.currentIndexChanged.connect(self.on_selection_change)
         self.comboBox_2.currentIndexChanged.connect(self.on_selection_change_2)
     
@@ -4936,6 +4941,19 @@ class Ui_MainWindow(object):
                     selection-background-color: #3A7;  # Color for selected item
                 }
             """)
+
+    def on_comport_dropdown(self, index):
+        item = self.comboBox_comport.currentText()
+        if item == WIFI_INTERFACE_OPTION:
+            self.lineEdit_ssid.setVisible(True)
+            self.label_ssid.setVisible(True)
+            self.lineEdit_password.setVisible(True)
+            self.label_password.setVisible(True)
+        else:
+            self.lineEdit_ssid.setVisible(False)
+            self.label_ssid.setVisible(False)
+            self.lineEdit_password.setVisible(False)
+            self.label_password.setVisible(False)
 
     def on_rtcm_dropdown(self, index):
         item = self.comboBox_comport_rtcm.currentText()
