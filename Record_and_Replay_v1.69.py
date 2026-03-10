@@ -90,6 +90,7 @@ developer_executable_tx = "nice --20 /home/root/adc4bits/libiio/build/examples/g
 click_count = 0
 line_tx_rx_count = 0
 active_comport_used = ""
+wifi_interface_selected = False
 default_gain_rx = "Slow attack"
 default_gain_tx = "-20"
 previous_data = b""
@@ -101,6 +102,7 @@ device_id = ""
 bus_no = ""
 log_file_size = 1000000 #1MB
 satellite_clicks = 5 #satellite clicks to move to developer mode
+WIFI_INTERFACE_OPTION = "WiFi Interface"
 ############ Flags ####################
 center_frequency_flag = False
 center_frequency_flag_2 = False
@@ -1342,12 +1344,20 @@ class Ui_MainWindow(object):
         if not hardware_ports == previous_port:
             self.comboBox_comport.clear()
             self.comboBox_comport.addItem("Select Port")
+            self.comboBox_comport.addItem(WIFI_INTERFACE_OPTION)
             non_rtcm_ports = True
             for port in hardware_ports:
                 if port == current_port:
                     present = True
                 self.comboBox_comport.addItem(port)
         previous_port = hardware_ports
+        self.update_wifi_interface_state()
+
+    def update_wifi_interface_state(self):
+        global wifi_interface_selected
+        wifi_interface_selected = (self.comboBox_comport.currentText() == WIFI_INTERFACE_OPTION)
+        if hasattr(self, "comboBox_baudrate"):
+            self.comboBox_baudrate.setEnabled(not wifi_interface_selected)
     
     def check_comport_Regularly(self):
         while True:
@@ -5200,6 +5210,7 @@ class Ui_MainWindow(object):
         global comport
         self.comport = self.comboBox_comport.itemText(index)
         comport = self.comport
+        self.update_wifi_interface_state()
 
     def get_baudrate(self, index):
         self.baudrate = self.comboBox_baudrate.itemText(index)
@@ -5484,8 +5495,8 @@ class Ui_MainWindow(object):
         global ad9361_checked
         if checked:
             ad9361_checked = True
-            self.comboBox_baudrate.setEnabled(True)
             self.comboBox_comport.setEnabled(True)
+            self.update_wifi_interface_state()
             self.comboBox_baudrate.setStyleSheet("""
                     QComboBox {
                         background-color: #2C3E50;
