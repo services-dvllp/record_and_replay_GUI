@@ -23,6 +23,9 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtCore import Qt
+from communication.interface_manager import InterfaceManager, LegacyConnectionAdapter
+from core.usb_info_controller import UsbInfoController
+from utils.connection_monitor import ConnectionMonitorThread
 
 
 ########## User and Developer Code ############
@@ -190,7 +193,7 @@ comport_2_checked = False
 main_func_called = False
 ###############################################################################
 def send_command(command):
-    return ser.write(command)
+    return ser.write(command) if ser is not None else 0
 
 ####################### Get the Current Date and Time ##########################
 def get_current_datetime():
@@ -1358,6 +1361,29 @@ class Ui_MainWindow(object):
         wifi_interface_selected = (self.comboBox_comport.currentText() == WIFI_INTERFACE_OPTION)
         if hasattr(self, "comboBox_baudrate"):
             self.comboBox_baudrate.setEnabled(not wifi_interface_selected)
+
+    def _configure_selected_interface(self):
+        selected = self.comboBox_comport.currentText()
+        if selected == WIFI_INTERFACE_OPTION:
+            self.interface_manager.set_interface(
+                InterfaceManager.WIFI,
+                ssid=self.lineEdit_ssid.text(),
+                password=self.lineEdit_password.text(),
+            )
+            return InterfaceManager.WIFI
+        self.interface_manager.set_interface(
+            InterfaceManager.COM,
+            comport=selected,
+            baudrate=self.comboBox_baudrate.currentText(),
+            timeout=timeout_time,
+        )
+        return InterfaceManager.COM
+
+    def _start_connection_monitor(self):
+        if self.connection_monitor_thread is not None:
+            self.connection_monitor_thread.stop()
+        self.connection_monitor_thread = ConnectionMonitorThread(self.interface_manager)
+        self.connection_monitor_thread.start()
     
     def check_comport_Regularly(self):
         while True:
@@ -1377,6 +1403,10 @@ class Ui_MainWindow(object):
         self.running = False
         self.thread = None
         self.worker = Worker()
+        self.interface_manager = InterfaceManager()
+        self.usb_info_controller = UsbInfoController(self.interface_manager)
+        self.connection_adapter = LegacyConnectionAdapter(self.interface_manager)
+        self.connection_monitor_thread = None
         #self.elapsed_time = 0
         """comport_thread = threading.Thread(target=self.check_comport_Regularly)
         comport_thread.start()"""
@@ -5726,63 +5756,47 @@ class Ui_MainWindow(object):
             """)
     def open_usb_info(self):
         global flag_raised, ser, usb_button_flag, newoutput
-        self.comport = self.comboBox_comport.currentText()
-        self.baudrate = self.comboBox_baudrate.currentText()
-        print(self.comport)
-        try:
-            ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-            send_command(b'\x03')
-            send_command(bytearray('clear\n', 'ascii'))
-            with open(file_path, 'a') as file:
-                file.write(f'\n{get_current_datetime()}   \x03\n')
-                file.write(f'{get_current_datetime()}   clear\n')
-            lines = self.read_Response_END() 
-            print(lines)
-        except serial.SerialException as e:
-            msg_box_2 = QMessageBox()
-            msg_box_2.setWindowTitle("Error!")
-            msg_box_2.setText("You cannot open this COM Port!")
-            msg_box_2.exec()
-            return
-        comport_is_active = comport_is_On(self.comport)
-        if comport_is_active: 
-            
-            send_command(bytearray(f'lsusb ; (echo END) > /dev/null\n', 'ascii'))
-            if Commands_file_user:
-                            with open(file_path, 'a') as file:
-                                file.write(f'\n{get_current_datetime()}   lsblk ; (echo END) > /dev/null\n')
-            lines = self.read_Response_END()  # Call the function
-            if lines is None:
-                    msg_box_11 = QMessageBox()
-                    msg_box_11.setWindowTitle("Error!")
-                    msg_box_11.setText(f"Oops! Response not received within timeout time\nPlease retry/ check the hardware connection.")
-                    msg_box_11.exec()
-                    ser.close()
-                    return  # Stop execution
-            print(lines)
-            output = ''.join([line.decode('utf-8') for line in lines[1:-2]])
-            
-            def raise_flag():
-                global flag_raised
-                flag_raised = False
-            newoutput = output.split("\n")
+        interface_type = self._configure_selected_interface()
 
-            if not gui_opened and not flag_raised:
-                    flag_raised = True
-                    msg_box_11 = QMessageBox()
-                    msg_box_11.setWindowTitle("USB Information")
-                    msg_box_11.setText(f"{output}")
-                    # Connect the finished signal to raise the flag
-                    msg_box_11.finished.connect(raise_flag)
-                    msg_box_11.exec()
+        if interface_type == InterfaceManager.WIFI:
+            if not self.interface_manager.wifi.connect_wifi():
+                msg_box_2 = QMessageBox()
+                msg_box_2.setWindowTitle("Error!")
+                msg_box_2.setText("WiFi is not connected.")
+                msg_box_2.exec()
+                return
+            if not self.interface_manager.wifi.connect():
+                msg_box_2 = QMessageBox()
+                msg_box_2.setWindowTitle("Error!")
+                msg_box_2.setText("Unable to establish SSH connection.")
+                msg_box_2.exec()
+                return
         else:
-                    msg_box_11 = QMessageBox()
-                    msg_box_11.setWindowTitle("Error!")
-                    msg_box_11.setText(f"Comport got disconnected")
-                    msg_box_11.exec()
-                    #self.open_after_disconnection()
-                    return 
-        ser.close()
+            try:
+                self.interface_manager.connect_interface()
+            except serial.SerialException:
+                msg_box_2 = QMessageBox()
+                msg_box_2.setWindowTitle("Error!")
+                msg_box_2.setText("You cannot open this COM Port!")
+                msg_box_2.exec()
+                return
+
+        ser = self.connection_adapter
+        output = self.usb_info_controller.get_usb_info()
+        newoutput = output.split("\n")
+
+        def raise_flag():
+            global flag_raised
+            flag_raised = False
+
+        if not gui_opened and not flag_raised:
+            flag_raised = True
+            msg_box_11 = QMessageBox()
+            msg_box_11.setWindowTitle("USB Information")
+            msg_box_11.setText(f"{output}")
+            msg_box_11.finished.connect(raise_flag)
+            msg_box_11.exec()
+
         usb_button_flag = True
 
     def open_replay_window(self):
@@ -8782,25 +8796,33 @@ class Ui_MainWindow(object):
             active_com_port_used_for_rtcm = self.comport_rtcm
         selected_submit = True
         if selected_submit:
-            ##############################################################
-            try:
+            interface_type = self._configure_selected_interface()
+            if interface_type == InterfaceManager.WIFI:
+                if not self.interface_manager.wifi.connect_wifi():
+                    msg_box_2 = QMessageBox()
+                    msg_box_2.setWindowTitle("Error!")
+                    msg_box_2.setText("WiFi is not connected.")
+                    msg_box_2.exec()
+                    return
+                if not self.interface_manager.wifi.connect():
+                    msg_box_2 = QMessageBox()
+                    msg_box_2.setWindowTitle("Error!")
+                    msg_box_2.setText("Unable to establish SSH connection.")
+                    msg_box_2.exec()
+                    return
+                ser = self.connection_adapter
+            else:
                 try:
-                    ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-                except serial.SerialException as e:
+                    self.interface_manager.connect_interface()
+                    ser = self.connection_adapter
+                except serial.SerialException:
                     msg_box_2 = QMessageBox()
                     msg_box_2.setWindowTitle("Error!")
                     msg_box_2.setText("You cannot open this COM Port!")
                     msg_box_2.exec()
-                    #self.open_after_disconnection()
                     return
-            except serial.SerialException as e:
-                msg_box_2 = QMessageBox()
-                msg_box_2.setWindowTitle("Error!")
-                msg_box_2.setText(f"You cannot open the {self.comport}!")
-                msg_box_2.exec()
-                return
-            #####################################################
-            if checked_both_without_HWUSB:
+
+            if checked_both_without_HWUSB and interface_type != InterfaceManager.WIFI:
                 try:
                     ser_rtcm = serial.Serial(self.comport_rtcm, self.baudrate_rtcm, timeout=timeout_time)
                 except serial.SerialException as e:
@@ -8810,6 +8832,7 @@ class Ui_MainWindow(object):
                     msg_box_2.exec()
                     ser.close()
                     return
+            self._start_connection_monitor()
             
 
             if HW_USB_in_use:
@@ -16867,8 +16890,6 @@ if __name__ == "__main__":
     MainWindow = MainWindowWithCloseEvent()
     MainWindow.show()
     sys.exit(app.exec())
-
-
 
 
 
