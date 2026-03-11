@@ -9,7 +9,7 @@ import threading
 import serial
 import serial.tools.list_ports
 from serial.tools import list_ports
-from serial_interface_utils import connect_to_interface, disconnect_interface
+from serial_interface_utils import connect_to_interface, disconnect_interface, send_serial_command
 
 from PIL import Image, ImageTk
 from pyubx2 import UBXReader
@@ -190,8 +190,7 @@ comport_2_checked = False
 main_func_called = False
 ###############################################################################
 def send_command(command):
-    if interface_in_use == 0:
-        return ser.write(command)
+    return send_serial_command(interface_in_use, ser, command)
 
 ####################### Get the Current Date and Time ##########################
 def get_current_datetime():
