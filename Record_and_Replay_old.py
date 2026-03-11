@@ -5721,34 +5721,42 @@ class Ui_MainWindow(object):
                     selection-background-color: #3A7;  # Color for selected item
                 }
             """)
-    def reconnect_serial_port(self, timeout_value=timeout_time, show_disconnection_dialog=False, destroy_root=False):
-        global ser, root
-
-        if ser.isOpen():
-            ser.close()
-
-        try:
-            ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_value)
-            return True
-        except serial.SerialException:
-            if show_disconnection_dialog:
-                messagebox.showwarning("Warning", "COM port got disconnected!")
-                if destroy_root:
-                    root.destroy()
-                self.open_after_disconnection()
-            else:
-                msg_box_2 = QMessageBox()
-                msg_box_2.setWindowTitle("Error!")
-                msg_box_2.setText("You cannot open this COM Port!")
-                msg_box_2.exec()
-            return False
+    ######################################################################################################################
+    def connect_to_interface(self, timeout_value=timeout_time, show_disconnection_dialog=False, destroy_root=False):
+        if interface_in_use == 0:
+            global ser, root
+            if ser.isOpen():
+                ser.close()
+            try:
+                ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_value)
+                return True
+            except serial.SerialException:
+                if show_disconnection_dialog:
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Icon.Warning)
+                    msg.setWindowTitle("Warning")
+                    msg.setText("COM port got disconnected!")
+                    msg.exec()
+                    if destroy_root:
+                        root.destroy()
+                    self.open_after_disconnection()
+                else:
+                    msg_box_2 = QMessageBox()
+                    msg_box_2.setWindowTitle("Error!")
+                    msg_box_2.setText("You cannot open this COM Port!")
+                    msg_box_2.exec()
+                return False
 
     def open_usb_info(self):
-        global flag_raised, ser, usb_button_flag, newoutput
+        global flag_raised, ser, usb_button_flag, newoutput, interface_in_use
         self.comport = self.comboBox_comport.currentText()
         self.baudrate = self.comboBox_baudrate.currentText()
         print(self.comport)
-        if not self.reconnect_serial_port(timeout_time):
+        if self.comport == WIFI_INTERFACE_OPTION:
+            interface_in_use = 1
+        else:
+            interface_in_use = 0
+        if not self.connect_to_interface(timeout_time):
             return
         send_command(b'\x03')
         send_command(bytearray('clear\n', 'ascii'))
@@ -5813,7 +5821,7 @@ class Ui_MainWindow(object):
                     msg_box_11.exec()
                     return
                 #####################################################################
-                if not self.reconnect_serial_port(timeout_time):
+                if not self.connect_to_interface(timeout_time):
                     self.open_after_disconnection()
                     return
                 #######################################################################
@@ -6856,7 +6864,7 @@ class Ui_MainWindow(object):
                     msg_box_11.exec()
                     return
                 #####################################################################
-                if not self.reconnect_serial_port(timeout_time):
+                if not self.connect_to_interface(timeout_time):
                     self.open_after_disconnection()
                     return
                 #######################################################################
@@ -8384,7 +8392,7 @@ class Ui_MainWindow(object):
                             self.lineEdit_8.setEnabled(False)
                             self.radioButton_autoplay.setEnabled(False)
 
-                            if not self.reconnect_serial_port(timeout_time):
+                            if not self.connect_to_interface(timeout_time):
                                 self.open_after_disconnection()
                                 return
 
@@ -8721,8 +8729,7 @@ class Ui_MainWindow(object):
 
     def connectivity_done(self):
         print(self.reference_frequency)
-        
-        global ser, bus_no, device_id, usb_button_flag
+        global ser, bus_no, device_id, usb_button_flag, interface_in_use
         global nvmelabel_lebel_txt, check_comport, SSD_free_space, selected_files_paths, HW_USB_in_use, checked_both_without_HWUSB
         global executable_rx, executable_tx, active_comport_used, active_com_port_used_for_rtcm, comport_connected, ser, submitted, fs_system, submit_btn_clicked, Edit_btn_clicked, nvme_label_found, checked_both, only_ad9361, only_rtcm, ser_rtcm
         if self.comport is None or self.baudrate is None:
@@ -8789,6 +8796,10 @@ class Ui_MainWindow(object):
             only_rtcm = False
             active_com_port_used_for_rtcm = self.comport_rtcm
         selected_submit = True
+        if self.comport == WIFI_INTERFACE_OPTION:
+            interface_in_use = 1
+        else:
+            interface_in_use = 0
         if selected_submit:
             ##############################################################
             try:
@@ -10365,7 +10376,7 @@ class Ui_MainWindow(object):
                                 print(fs_system)
 
                                 ########################################################################
-                                if not self.reconnect_serial_port(timeout_time, show_disconnection_dialog=True, destroy_root=True):
+                                if not self.connect_to_interface(timeout_time, show_disconnection_dialog=True, destroy_root=True):
                                     return
                                 ########################################################################
                             ########################################################################
@@ -10471,7 +10482,7 @@ class Ui_MainWindow(object):
                                 print(fs_system)
                                   
                                 ########################################################################
-                                if not self.reconnect_serial_port(timeout_time, show_disconnection_dialog=True, destroy_root=True):
+                                if not self.connect_to_interface(timeout_time, show_disconnection_dialog=True, destroy_root=True):
                                     return
                                 ########################################################################
                                 self.get_max_duration()
