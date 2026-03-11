@@ -190,7 +190,8 @@ comport_2_checked = False
 main_func_called = False
 ###############################################################################
 def send_command(command):
-    return ser.write(command)
+    if interface_in_use == 0:
+        return ser.write(command)
 
 ####################### Get the Current Date and Time ##########################
 def get_current_datetime():
@@ -5723,9 +5724,14 @@ class Ui_MainWindow(object):
                 }
             """)
     ######################################################################################################################
-    def ensure_interface_connection(self, timeout_value=timeout_time, show_disconnection_dialog=False, destroy_root=False):
+    def ensure_interface_disconnection(self):
+        global ser, interface_in_use
         if interface_in_use == 0:
-            global ser, root
+            disconnect_interface(ser)
+
+    def ensure_interface_connection(self, timeout_value=timeout_time, show_disconnection_dialog=False, destroy_root=False):
+        global ser, root
+        if interface_in_use == 0:
             ser = connect_to_interface(ser, self.comport, self.baudrate, timeout_value)
             if ser is not None:
                 return True
@@ -5776,7 +5782,7 @@ class Ui_MainWindow(object):
                     msg_box_11.setWindowTitle("Error!")
                     msg_box_11.setText(f"Oops! Response not received within timeout time\nPlease retry/ check the hardware connection.")
                     msg_box_11.exec()
-                    disconnect_interface(ser)
+                    self.ensure_interface_disconnection()
                     return  # Stop execution
             print(lines)
             output = ''.join([line.decode('utf-8') for line in lines[1:-2]])
@@ -5801,7 +5807,7 @@ class Ui_MainWindow(object):
                     msg_box_11.exec()
                     #self.open_after_disconnection()
                     return 
-        disconnect_interface(ser)
+        self.ensure_interface_disconnection()
         usb_button_flag = True
 
     def open_replay_window(self):
@@ -5830,7 +5836,7 @@ class Ui_MainWindow(object):
                             file.write(f'\n{get_current_datetime()}   *----Opened Replay window----*\n')
                     #############################################################################
                     """if ser.isOpen():
-                        disconnect_interface(ser)
+                        self.ensure_interface_disconnection()
                         #time.sleep(1)
                     # ####################################################
                     ser = serial.Serial(self.comport, self.baudrate, timeout=0.3)"""
@@ -6588,7 +6594,7 @@ class Ui_MainWindow(object):
             global comport_connected, submitted, config_button, ser_rtcm, check_comport, ser
             comport_connected = False
             if ser.isOpen():
-                disconnect_interface(ser)
+                self.ensure_interface_disconnection()
             if checked_both_without_HWUSB:
                 if ser_rtcm.isOpen():
                     ser_rtcm.close()
@@ -6904,7 +6910,7 @@ class Ui_MainWindow(object):
                             return
                     ####################################################################################
                     """if ser.isOpen:
-                        disconnect_interface(ser)
+                        self.ensure_interface_disconnection()
                     ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)"""
                     ####################################################################################
                     record_tab = True
@@ -8811,7 +8817,7 @@ class Ui_MainWindow(object):
                     msg_box_2.setWindowTitle("Error!")
                     msg_box_2.setText(f"You cannot open the {self.comport_rtcm}!")
                     msg_box_2.exec()
-                    disconnect_interface(ser)
+                    self.ensure_interface_disconnection()
                     return
             
 
@@ -8821,7 +8827,7 @@ class Ui_MainWindow(object):
                     msg_box_2.setWindowTitle("Attention!")
                     msg_box_2.setText(f"Please verify the HW USB info by clicking on the HW USB info btn!")
                     msg_box_2.exec()
-                    disconnect_interface(ser)
+                    self.ensure_interface_disconnection()
                     return
                 device_id = self.lineEdit_deviceid.text().strip()
                 bus_no = self.lineEdit_busno.text().strip()
@@ -8851,14 +8857,14 @@ class Ui_MainWindow(object):
                             msg_box_2.setWindowTitle("Error!")
                             msg_box_2.setText(f"No matching Bus and Device found in the USB info!")
                             msg_box_2.exec()
-                            disconnect_interface(ser)
+                            self.ensure_interface_disconnection()
                             return
                     except:
                         msg_box_2 = QMessageBox()
                         msg_box_2.setWindowTitle("Error!")
                         msg_box_2.setText(f"Device ID and bus number should be an integer!")
                         msg_box_2.exec()
-                        disconnect_interface(ser)
+                        self.ensure_interface_disconnection()
                         return
                 print(device_id)
                 print(bus_no)
@@ -8882,7 +8888,7 @@ class Ui_MainWindow(object):
                     msg_box_11.setWindowTitle("Error!")
                     msg_box_11.setText(f"Could not decode the response from the device!\nPlease check the connection and try again.")
                     msg_box_11.exec()
-                    disconnect_interface(ser)
+                    self.ensure_interface_disconnection()
                     return
                 #for line in decoded_lines:
                 if "No such" in decoded_lines[-3]:
@@ -8890,7 +8896,7 @@ class Ui_MainWindow(object):
                         msg_box_11.setWindowTitle("Error!")
                         msg_box_11.setText(f"adc4bits folder not found in the current directory!\nPlease place the adc4bits folder and libiio folder inside adc4bits folder.\n")
                         msg_box_11.exec()
-                        disconnect_interface(ser)
+                        self.ensure_interface_disconnection()
                         return
                        
                 if Commands_file_user:
@@ -9291,7 +9297,7 @@ class Ui_MainWindow(object):
                         file.write(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n')
             comport_connected = False
             if ser.isOpen():
-                disconnect_interface(ser)
+                self.ensure_interface_disconnection()
                 print("closed!")
             if checked_both_without_HWUSB:
                 if ser_rtcm.isOpen():
@@ -9435,7 +9441,7 @@ class Ui_MainWindow(object):
                         self.update_time_1()
                         
                         #send_command(bytearray("kill -SIGINT $(ps -uax | grep ad9361-ii | awk -F' ' '{ print $2 }')\n",'ascii'))
-                        #disconnect_interface(ser)
+                        #self.ensure_interface_disconnection()
         else:
             msg_box_9 = QMessageBox()
             msg_box_9.setWindowTitle("Error!")
@@ -10516,7 +10522,7 @@ class Ui_MainWindow(object):
                             icon = QIcon(pixmap)
                             self.pushButton_browse_record.setIcon(icon)
                             self.pushButton_browse_record.setIconSize(QSize(30, 30))  # Set icon size
-                            #disconnect_interface(ser)
+                            #self.ensure_interface_disconnection()
                             root.destroy()
                     else:
                         result = messagebox.askyesno("Sure?", "Are you sure you want to save the file in this folder?")
@@ -10560,7 +10566,7 @@ class Ui_MainWindow(object):
                             self.pushButton_4.setEnabled(True)
                             self.pushButton_5.setEnabled(True)
                             self.pushButton_select_file.setEnabled(True)
-                            #disconnect_interface(ser)
+                            #self.ensure_interface_disconnection()
                             root.destroy()
                 # Bind double-click event to the Listbox
                 listbox.bind("<Double-1>", lambda event: open_file_selection())
@@ -14037,7 +14043,7 @@ class Ui_MainWindow(object):
                 #############################################################################
                 #####################################################################
                 """if ser.isOpen():
-                    disconnect_interface(ser)
+                    self.ensure_interface_disconnection()
                 try:
                     ser = serial.Serial(self.comport, self.baudrate, timeout=0.5)
                 except serial.SerialException as e:
@@ -14078,7 +14084,7 @@ class Ui_MainWindow(object):
                 ################################################################################
                 #directory = read_selected_file_path
                 """if ser.isOpen():
-                    disconnect_interface(ser)
+                    self.ensure_interface_disconnection()
                 try:
                     ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
                     ser.readlines(ser.in_waiting)
@@ -16140,7 +16146,7 @@ class Ui_MainWindow(object):
                         #self.label_current_file.setStyleSheet("color: red;") 
                         ###############################################################################################
                         #send_command(bytearray("kill -SIGINT $(ps -uax | grep ad9361-ii | awk -F' ' '{ print $2 }')\n",'ascii'))
-                        #disconnect_interface(ser)
+                        #self.ensure_interface_disconnection()
                         
         else:
             msg_box_9 = QMessageBox()
