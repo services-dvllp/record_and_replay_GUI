@@ -16924,12 +16924,24 @@ class MainWindowWithCloseEvent(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     import sys
+
+    def handle_uncaught_exception(exc_type, exc_value, exc_traceback):
+        """Avoid crashing the GUI on KeyboardInterrupt from callback execution."""
+        if issubclass(exc_type, KeyboardInterrupt):
+            print("KeyboardInterrupt received inside GUI event callback; ignoring it.")
+            return
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+    sys.excepthook = handle_uncaught_exception
+
     app = QtWidgets.QApplication(sys.argv)
     # Use the subclass that handles the close event
     MainWindow = MainWindowWithCloseEvent()
     MainWindow.show()
-    sys.exit(app.exec())
-
+    try:
+        sys.exit(app.exec())
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt received while the Qt event loop was running; closing cleanly.")
 
 
 
