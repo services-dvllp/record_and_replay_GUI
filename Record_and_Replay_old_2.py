@@ -5725,7 +5725,7 @@ class Ui_MainWindow(object):
     def connect_to_interface(self, timeout_value=timeout_time, show_disconnection_dialog=False, destroy_root=False):
         if interface_in_use == 0:
             global ser, root
-            if ser.isOpen():
+            if ser is not None and ser.isOpen():
                 ser.close()
             try:
                 ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_value)
