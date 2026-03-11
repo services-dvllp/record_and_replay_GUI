@@ -5743,6 +5743,38 @@ class Ui_MainWindow(object):
                 msg_box_2.exec()
             return False
 
+    def connect_to_interface(
+        self,
+        timeout_value=timeout_time,
+        title="Error!",
+        message="You cannot open this COM Port!",
+        use_messagebox=False,
+        destroy_root=False,
+        open_disconnection=False,
+    ):
+        global ser, root
+
+        if ser.isOpen():
+            ser.close()
+
+        try:
+            ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_value)
+            return True
+        except serial.SerialException:
+            if use_messagebox:
+                messagebox.showwarning("Warning", message)
+                if destroy_root:
+                    root.destroy()
+            else:
+                msg_box = QMessageBox()
+                msg_box.setWindowTitle(title)
+                msg_box.setText(message)
+                msg_box.exec()
+
+            if open_disconnection:
+                self.open_after_disconnection()
+            return False
+
     def open_usb_info(self):
         global flag_raised, ser, usb_button_flag, newoutput
         self.comport = self.comboBox_comport.currentText()
@@ -8791,21 +8823,11 @@ class Ui_MainWindow(object):
         selected_submit = True
         if selected_submit:
             ##############################################################
-            try:
-                try:
-                    ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-                except serial.SerialException as e:
-                    msg_box_2 = QMessageBox()
-                    msg_box_2.setWindowTitle("Error!")
-                    msg_box_2.setText("You cannot open this COM Port!")
-                    msg_box_2.exec()
-                    #self.open_after_disconnection()
-                    return
-            except serial.SerialException as e:
-                msg_box_2 = QMessageBox()
-                msg_box_2.setWindowTitle("Error!")
-                msg_box_2.setText(f"You cannot open the {self.comport}!")
-                msg_box_2.exec()
+            if not self.connect_to_interface(
+                timeout_value=timeout_time,
+                title="Error!",
+                message="You cannot open this COM Port!",
+            ):
                 return
             #####################################################
             if checked_both_without_HWUSB:
@@ -10779,14 +10801,12 @@ class Ui_MainWindow(object):
         print(self.fs_system_GUI)
         if ser.isOpen():
             ser.close()
-        try:
-            ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-        except serial.SerialException as e:
-            msg_box_11 = QMessageBox()
-            msg_box_11.setWindowTitle("Error!")
-            msg_box_11.setText(f"COM port got disconnected!")
-            msg_box_11.exec()
-            self.open_after_disconnection()
+        if not self.connect_to_interface(
+            timeout_value=timeout_time,
+            title="Error!",
+            message="COM port got disconnected!",
+            open_disconnection=True,
+        ):
             return
         if not "/dev/" in self.fs_system_GUI:
             nvme_label_found = False
@@ -11201,14 +11221,12 @@ class Ui_MainWindow(object):
 
         if ser.isOpen():
             ser.close()
-        try:
-            ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-        except serial.SerialException as e:
-            msg_box_11 = QMessageBox()
-            msg_box_11.setWindowTitle("Error!")
-            msg_box_11.setText(f"COM port got disconnected!")
-            msg_box_11.exec()
-            self.open_after_disconnection()
+        if not self.connect_to_interface(
+            timeout_value=timeout_time,
+            title="Error!",
+            message="COM port got disconnected!",
+            open_disconnection=True,
+        ):
             return
         
         if developer_rx_tx:
@@ -11290,14 +11308,12 @@ class Ui_MainWindow(object):
         
         if ser.isOpen():
             ser.close()
-        try:
-            ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-        except serial.SerialException as e:
-            msg_box_11 = QMessageBox()
-            msg_box_11.setWindowTitle("Error!")
-            msg_box_11.setText(f"COM port got disconnected!")
-            msg_box_11.exec()
-            self.open_after_disconnection() 
+        if not self.connect_to_interface(
+            timeout_value=timeout_time,
+            title="Error!",
+            message="COM port got disconnected!",
+            open_disconnection=True,
+        ):
             return
         
         # Display a message or open a new window
@@ -13220,12 +13236,13 @@ class Ui_MainWindow(object):
                                     ########################################################################
                                     if ser.isOpen:
                                         ser.close()
-                                    try:
-                                        ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-                                    except serial.SerialException as e:
-                                        messagebox.showwarning("Warning", "COM port got disconnected!")
-                                        root.destroy()
-                                        self.open_after_disconnection()
+                                    if not self.connect_to_interface(
+                                        timeout_value=timeout_time,
+                                        message="COM port got disconnected!",
+                                        use_messagebox=True,
+                                        destroy_root=True,
+                                        open_disconnection=True,
+                                    ):
                                         return
                                     ########################################################################
                                     lines = ser.readlines(ser.in_waiting)
@@ -13340,12 +13357,13 @@ class Ui_MainWindow(object):
                                     
                                     if ser.isOpen:
                                         ser.close()
-                                    try:
-                                        ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-                                    except serial.SerialException as e:
-                                        messagebox.showwarning("Warning", "COM port got disconnected!")
-                                        root.destroy()
-                                        self.open_after_disconnection()
+                                    if not self.connect_to_interface(
+                                        timeout_value=timeout_time,
+                                        message="COM port got disconnected!",
+                                        use_messagebox=True,
+                                        destroy_root=True,
+                                        open_disconnection=True,
+                                    ):
                                         return
                                     ########################################################################
                                     lines = ser.readlines(ser.in_waiting)
@@ -15454,14 +15472,12 @@ class Ui_MainWindow(object):
 
                             if ser.isOpen():
                                 ser.close()
-                            try:
-                                ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-                            except serial.SerialException as e:
-                                msg_box_2 = QMessageBox()
-                                msg_box_2.setWindowTitle("Error!")
-                                msg_box_2.setText("You cannot open this COM Port!")
-                                msg_box_2.exec()
-                                self.open_after_disconnection()
+                            if not self.connect_to_interface(
+                                timeout_value=timeout_time,
+                                title="Error!",
+                                message="You cannot open this COM Port!",
+                                open_disconnection=True,
+                            ):
                                 return
                             
                             mode = 0
@@ -16920,7 +16936,6 @@ if __name__ == "__main__":
         sys.exit(app.exec())
     except KeyboardInterrupt:
         print("KeyboardInterrupt received while the Qt event loop was running; closing cleanly.")
-
 
 
 
