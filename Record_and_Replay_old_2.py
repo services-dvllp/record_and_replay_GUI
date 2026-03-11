@@ -9,6 +9,7 @@ import threading
 import serial
 import serial.tools.list_ports
 from serial.tools import list_ports
+from serial_interface_utils import connect_to_interface, disconnect_interface
 
 from PIL import Image, ImageTk
 from pyubx2 import UBXReader
@@ -5722,30 +5723,27 @@ class Ui_MainWindow(object):
                 }
             """)
     ######################################################################################################################
-    def connect_to_interface(self, timeout_value=timeout_time, show_disconnection_dialog=False, destroy_root=False):
+    def ensure_interface_connection(self, timeout_value=timeout_time, show_disconnection_dialog=False, destroy_root=False):
         if interface_in_use == 0:
             global ser, root
-            if ser is not None and ser.isOpen():
-                ser.close()
-            try:
-                ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_value)
+            ser = connect_to_interface(ser, self.comport, self.baudrate, timeout_value)
+            if ser is not None:
                 return True
-            except serial.SerialException:
-                if show_disconnection_dialog:
-                    msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Icon.Warning)
-                    msg.setWindowTitle("Warning")
-                    msg.setText("COM port got disconnected!")
-                    msg.exec()
-                    if destroy_root:
-                        root.destroy()
-                    self.open_after_disconnection()
-                else:
-                    msg_box_2 = QMessageBox()
-                    msg_box_2.setWindowTitle("Error!")
-                    msg_box_2.setText("You cannot open this COM Port!")
-                    msg_box_2.exec()
-                return False
+            if show_disconnection_dialog:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setWindowTitle("Warning")
+                msg.setText("COM port got disconnected!")
+                msg.exec()
+                if destroy_root:
+                    root.destroy()
+                self.open_after_disconnection()
+            else:
+                msg_box_2 = QMessageBox()
+                msg_box_2.setWindowTitle("Error!")
+                msg_box_2.setText("You cannot open this COM Port!")
+                msg_box_2.exec()
+            return False
 
     def open_usb_info(self):
         global flag_raised, ser, usb_button_flag, newoutput, interface_in_use
@@ -5756,7 +5754,7 @@ class Ui_MainWindow(object):
             interface_in_use = 1
         else:
             interface_in_use = 0
-        if not self.connect_to_interface(timeout_time):
+        if not self.ensure_interface_connection(timeout_time):
             return
         send_command(b'\x03')
         send_command(bytearray('clear\n', 'ascii'))
@@ -5778,7 +5776,7 @@ class Ui_MainWindow(object):
                     msg_box_11.setWindowTitle("Error!")
                     msg_box_11.setText(f"Oops! Response not received within timeout time\nPlease retry/ check the hardware connection.")
                     msg_box_11.exec()
-                    ser.close()
+                    disconnect_interface(ser)
                     return  # Stop execution
             print(lines)
             output = ''.join([line.decode('utf-8') for line in lines[1:-2]])
@@ -5803,7 +5801,7 @@ class Ui_MainWindow(object):
                     msg_box_11.exec()
                     #self.open_after_disconnection()
                     return 
-        ser.close()
+        disconnect_interface(ser)
         usb_button_flag = True
 
     def open_replay_window(self):
@@ -5821,7 +5819,7 @@ class Ui_MainWindow(object):
                     msg_box_11.exec()
                     return
                 #####################################################################
-                if not self.connect_to_interface(timeout_time):
+                if not self.ensure_interface_connection(timeout_time):
                     self.open_after_disconnection()
                     return
                 #######################################################################
@@ -5832,7 +5830,7 @@ class Ui_MainWindow(object):
                             file.write(f'\n{get_current_datetime()}   *----Opened Replay window----*\n')
                     #############################################################################
                     """if ser.isOpen():
-                        ser.close()
+                        disconnect_interface(ser)
                         #time.sleep(1)
                     # ####################################################
                     ser = serial.Serial(self.comport, self.baudrate, timeout=0.3)"""
@@ -6590,7 +6588,7 @@ class Ui_MainWindow(object):
             global comport_connected, submitted, config_button, ser_rtcm, check_comport, ser
             comport_connected = False
             if ser.isOpen():
-                ser.close()
+                disconnect_interface(ser)
             if checked_both_without_HWUSB:
                 if ser_rtcm.isOpen():
                     ser_rtcm.close()
@@ -6864,7 +6862,7 @@ class Ui_MainWindow(object):
                     msg_box_11.exec()
                     return
                 #####################################################################
-                if not self.connect_to_interface(timeout_time):
+                if not self.ensure_interface_connection(timeout_time):
                     self.open_after_disconnection()
                     return
                 #######################################################################
@@ -6906,7 +6904,7 @@ class Ui_MainWindow(object):
                             return
                     ####################################################################################
                     """if ser.isOpen:
-                        ser.close()
+                        disconnect_interface(ser)
                     ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)"""
                     ####################################################################################
                     record_tab = True
@@ -8392,7 +8390,7 @@ class Ui_MainWindow(object):
                             self.lineEdit_8.setEnabled(False)
                             self.radioButton_autoplay.setEnabled(False)
 
-                            if not self.connect_to_interface(timeout_time):
+                            if not self.ensure_interface_connection(timeout_time):
                                 self.open_after_disconnection()
                                 return
 
@@ -8802,7 +8800,7 @@ class Ui_MainWindow(object):
             interface_in_use = 0
         if selected_submit:
             ##############################################################
-            if not self.connect_to_interface(timeout_time):
+            if not self.ensure_interface_connection(timeout_time):
                 return
             #####################################################
             if checked_both_without_HWUSB:
@@ -8813,7 +8811,7 @@ class Ui_MainWindow(object):
                     msg_box_2.setWindowTitle("Error!")
                     msg_box_2.setText(f"You cannot open the {self.comport_rtcm}!")
                     msg_box_2.exec()
-                    ser.close()
+                    disconnect_interface(ser)
                     return
             
 
@@ -8823,7 +8821,7 @@ class Ui_MainWindow(object):
                     msg_box_2.setWindowTitle("Attention!")
                     msg_box_2.setText(f"Please verify the HW USB info by clicking on the HW USB info btn!")
                     msg_box_2.exec()
-                    ser.close()
+                    disconnect_interface(ser)
                     return
                 device_id = self.lineEdit_deviceid.text().strip()
                 bus_no = self.lineEdit_busno.text().strip()
@@ -8853,14 +8851,14 @@ class Ui_MainWindow(object):
                             msg_box_2.setWindowTitle("Error!")
                             msg_box_2.setText(f"No matching Bus and Device found in the USB info!")
                             msg_box_2.exec()
-                            ser.close()
+                            disconnect_interface(ser)
                             return
                     except:
                         msg_box_2 = QMessageBox()
                         msg_box_2.setWindowTitle("Error!")
                         msg_box_2.setText(f"Device ID and bus number should be an integer!")
                         msg_box_2.exec()
-                        ser.close()
+                        disconnect_interface(ser)
                         return
                 print(device_id)
                 print(bus_no)
@@ -8884,7 +8882,7 @@ class Ui_MainWindow(object):
                     msg_box_11.setWindowTitle("Error!")
                     msg_box_11.setText(f"Could not decode the response from the device!\nPlease check the connection and try again.")
                     msg_box_11.exec()
-                    ser.close()
+                    disconnect_interface(ser)
                     return
                 #for line in decoded_lines:
                 if "No such" in decoded_lines[-3]:
@@ -8892,7 +8890,7 @@ class Ui_MainWindow(object):
                         msg_box_11.setWindowTitle("Error!")
                         msg_box_11.setText(f"adc4bits folder not found in the current directory!\nPlease place the adc4bits folder and libiio folder inside adc4bits folder.\n")
                         msg_box_11.exec()
-                        ser.close()
+                        disconnect_interface(ser)
                         return
                        
                 if Commands_file_user:
@@ -9293,7 +9291,7 @@ class Ui_MainWindow(object):
                         file.write(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n')
             comport_connected = False
             if ser.isOpen():
-                ser.close()
+                disconnect_interface(ser)
                 print("closed!")
             if checked_both_without_HWUSB:
                 if ser_rtcm.isOpen():
@@ -9437,7 +9435,7 @@ class Ui_MainWindow(object):
                         self.update_time_1()
                         
                         #send_command(bytearray("kill -SIGINT $(ps -uax | grep ad9361-ii | awk -F' ' '{ print $2 }')\n",'ascii'))
-                        #ser.close()
+                        #disconnect_interface(ser)
         else:
             msg_box_9 = QMessageBox()
             msg_box_9.setWindowTitle("Error!")
@@ -10362,7 +10360,7 @@ class Ui_MainWindow(object):
                                 print(fs_system)
 
                                 ########################################################################
-                                if not self.connect_to_interface(timeout_time, show_disconnection_dialog=True, destroy_root=True):
+                                if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True, destroy_root=True):
                                     return
                                 ########################################################################
                             ########################################################################
@@ -10468,7 +10466,7 @@ class Ui_MainWindow(object):
                                 print(fs_system)
                                   
                                 ########################################################################
-                                if not self.connect_to_interface(timeout_time, show_disconnection_dialog=True, destroy_root=True):
+                                if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True, destroy_root=True):
                                     return
                                 ########################################################################
                                 self.get_max_duration()
@@ -10518,7 +10516,7 @@ class Ui_MainWindow(object):
                             icon = QIcon(pixmap)
                             self.pushButton_browse_record.setIcon(icon)
                             self.pushButton_browse_record.setIconSize(QSize(30, 30))  # Set icon size
-                            #ser.close()
+                            #disconnect_interface(ser)
                             root.destroy()
                     else:
                         result = messagebox.askyesno("Sure?", "Are you sure you want to save the file in this folder?")
@@ -10562,7 +10560,7 @@ class Ui_MainWindow(object):
                             self.pushButton_4.setEnabled(True)
                             self.pushButton_5.setEnabled(True)
                             self.pushButton_select_file.setEnabled(True)
-                            #ser.close()
+                            #disconnect_interface(ser)
                             root.destroy()
                 # Bind double-click event to the Listbox
                 listbox.bind("<Double-1>", lambda event: open_file_selection())
@@ -10774,7 +10772,7 @@ class Ui_MainWindow(object):
         count = 0
         global fs_system, ser, submit_btn_clicked, Edit_btn_clicked, nvme_label_found, ser, executable_rx, executable_tx
         print(self.fs_system_GUI)
-        if not self.connect_to_interface(timeout_time, show_disconnection_dialog=True):
+        if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True):
             return
         if not "/dev/" in self.fs_system_GUI:
             nvme_label_found = False
@@ -11187,7 +11185,7 @@ class Ui_MainWindow(object):
         global click_count, gui_opened
         global executable_rx, executable_tx, developer_executable_rx, developer_executable_tx, ser, root, current_in_use
 
-        if not self.connect_to_interface(timeout_time, show_disconnection_dialog=True):
+        if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True):
             return
         
         if developer_rx_tx:
@@ -11267,7 +11265,7 @@ class Ui_MainWindow(object):
             return
         print(executable_rx)
         
-        if not self.connect_to_interface(timeout_time, show_disconnection_dialog=True):
+        if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True):
             return
         
         # Display a message or open a new window
@@ -13188,7 +13186,7 @@ class Ui_MainWindow(object):
                                     print(fs_system)
 
                                     ########################################################################
-                                    if not self.connect_to_interface(timeout_time, show_disconnection_dialog=True, destroy_root=True):
+                                    if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True, destroy_root=True):
                                         return
                                     ########################################################################
                                     lines = ser.readlines(ser.in_waiting)
@@ -13301,7 +13299,7 @@ class Ui_MainWindow(object):
                                         self.open_after_disconnection()
                                         return
                                     
-                                    if not self.connect_to_interface(timeout_time, show_disconnection_dialog=True, destroy_root=True):
+                                    if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True, destroy_root=True):
                                         return
                                     ########################################################################
                                     lines = ser.readlines(ser.in_waiting)
@@ -14039,7 +14037,7 @@ class Ui_MainWindow(object):
                 #############################################################################
                 #####################################################################
                 """if ser.isOpen():
-                    ser.close()
+                    disconnect_interface(ser)
                 try:
                     ser = serial.Serial(self.comport, self.baudrate, timeout=0.5)
                 except serial.SerialException as e:
@@ -14080,7 +14078,7 @@ class Ui_MainWindow(object):
                 ################################################################################
                 #directory = read_selected_file_path
                 """if ser.isOpen():
-                    ser.close()
+                    disconnect_interface(ser)
                 try:
                     ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
                     ser.readlines(ser.in_waiting)
@@ -15408,7 +15406,7 @@ class Ui_MainWindow(object):
                                 #print("Entered Duration in seconds is:", time_to_seconds(self.duration_value))
                             print("Duration to log in s is ",mem_avail_time)
 
-                            if not self.connect_to_interface(timeout_time, show_disconnection_dialog=True):
+                            if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True):
                                 return
                             
                             mode = 0
@@ -16142,7 +16140,7 @@ class Ui_MainWindow(object):
                         #self.label_current_file.setStyleSheet("color: red;") 
                         ###############################################################################################
                         #send_command(bytearray("kill -SIGINT $(ps -uax | grep ad9361-ii | awk -F' ' '{ print $2 }')\n",'ascii'))
-                        #ser.close()
+                        #disconnect_interface(ser)
                         
         else:
             msg_box_9 = QMessageBox()
@@ -16867,6 +16865,5 @@ if __name__ == "__main__":
         sys.exit(app.exec())
     except KeyboardInterrupt:
         print("KeyboardInterrupt received while the Qt event loop was running; closing cleanly.")
-
 
 
