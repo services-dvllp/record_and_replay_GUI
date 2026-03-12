@@ -192,6 +192,12 @@ main_func_called = False
 def send_command(command):
     return send_serial_command(interface_in_use, ser, command)
 
+
+def read_serial_lines():
+    if ser is None:
+        return []
+    return ser.readlines(ser.in_waiting)
+
 ####################### Get the Current Date and Time ##########################
 def get_current_datetime():
     timestamp = time.time()
@@ -525,7 +531,7 @@ def get_memory_available(fs_system):
     print(fs_system)
     global ser
     ########################################################
-    bss = ser.readlines(ser.in_waiting)
+    bss = read_serial_lines()
     #########################################################
     #########################################################
     send_command(bytearray('df\n','ascii'))
@@ -533,7 +539,7 @@ def get_memory_available(fs_system):
         with open(file_path, 'a') as file:
             file.write(f'{get_current_datetime()}   df\n')
     # time.sleep(1) 
-    bs = ser.readlines(ser.in_waiting)
+    bs = read_serial_lines()
     print(bs)
     if Commands_file_user:
                             with open(file_path_to_read_response, 'a') as file:
@@ -1055,7 +1061,7 @@ class Ui_MainWindow(object):
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f'\n{get_current_datetime()}   [ -f "{file_}" ] && echo "File exists." || echo "File does not exist."\n')
-                            lines = ser.readlines(ser.in_waiting)
+                            lines = read_serial_lines()
                             print(lines)
                             decoded_lines = [line.decode() for line in lines]
                             print(decoded_lines)
@@ -1120,7 +1126,7 @@ class Ui_MainWindow(object):
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f'{get_current_datetime()}   cd {command}\n')
-                            lines = ser.readlines(ser.in_waiting)
+                            lines = read_serial_lines()
                         else:
                             deleting_on_progress = False
                             self.pushButton_browse_config.setEnabled(True)
@@ -4410,7 +4416,7 @@ class Ui_MainWindow(object):
             return
 
         main_func_called = False
-        bs = ser.readlines(ser.in_waiting)
+        bs = read_serial_lines()
         if not comport_is_On(self.comport):
             return
 
@@ -6379,7 +6385,7 @@ class Ui_MainWindow(object):
                 self.pushButton_refresh_config.setIcon(icon)
                 self.pushButton_refresh_config.setIconSize(QSize(30, 30))  # Set icon size"""
 
-                lines = ser.readlines(ser.in_waiting)
+                lines = read_serial_lines()
                 comport_is_active = comport_is_On(self.comport)
          
                 if comport_is_active:   
@@ -6387,7 +6393,7 @@ class Ui_MainWindow(object):
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
-                    lines = ser.readlines(ser.in_waiting)
+                    lines = read_serial_lines()
                 else:
                     msg_box_11 = QMessageBox()
                     msg_box_11.setWindowTitle("Error!")
@@ -6572,7 +6578,7 @@ class Ui_MainWindow(object):
                         msg_box_11.exec()
                         self.open_after_disconnection()
                         return
-                    ser.readlines(ser.in_waiting)
+                    read_serial_lines()
                     self.variable_names = []
         
                 self.populate_table()
@@ -6899,7 +6905,7 @@ class Ui_MainWindow(object):
                             if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                                     file.write(f'\n{get_current_datetime()}   clear\n')
-                            bs = ser.readlines(ser.in_waiting)
+                            bs = read_serial_lines()
                         else:
                             msg_box_11 = QMessageBox()
                             msg_box_11.setWindowTitle("Error!")
@@ -10369,7 +10375,7 @@ class Ui_MainWindow(object):
                                     return
                                 ########################################################################
                             ########################################################################
-                                lines = ser.readlines(ser.in_waiting)
+                                lines = read_serial_lines()
                                 ###################################################################################
                                 if comport_is_active:
                                         # Use the 'mv' command for renaming
@@ -10606,7 +10612,7 @@ class Ui_MainWindow(object):
                 global breakloop, download
                 breakloop = False
                 download = "0%"
-                lines = ser.readlines(ser.in_waiting)
+                lines = read_serial_lines()
                 decoded_lines = [line.decode() for line in lines]
                 for line in decoded_lines:
                     if "[" and "]" in line:
@@ -10688,7 +10694,7 @@ class Ui_MainWindow(object):
                     # GUI Setup
                     while(True):
                         testcount += 1
-                        lines = ser.readlines(ser.in_waiting)
+                        lines = read_serial_lines()
                         #print(lines)
                         decoded_lines = [line.decode() for line in lines]
                         for line in decoded_lines:
@@ -10812,7 +10818,7 @@ class Ui_MainWindow(object):
             if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cd {command}\n')
-            lines = ser.readlines(ser.in_waiting)
+            lines = read_serial_lines()
         else:
             msg_box_11 = QMessageBox()
             msg_box_11.setWindowTitle("Error!")
@@ -10829,7 +10835,7 @@ class Ui_MainWindow(object):
             if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cat {actual_nvme}\n')
-            lines = ser.readlines(ser.in_waiting)
+            lines = read_serial_lines()
             print(lines)
         else:
             msg_box_11 = QMessageBox()
@@ -10918,7 +10924,7 @@ class Ui_MainWindow(object):
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f"\n{get_current_datetime()}   echo '{new_lines}'>>{actual_nvme}\n")
-                            response = ser.readlines(ser.in_waiting)
+                            response = read_serial_lines()
                         else:
                             msg_box_11 = QMessageBox()
                             msg_box_11.setWindowTitle("Error!")
@@ -10976,7 +10982,7 @@ class Ui_MainWindow(object):
                             msg_box_11.exec()
                             self.open_after_disconnection()
                             return
-                    bs = ser.readlines(ser.in_waiting)
+                    bs = read_serial_lines()
                     print(bs)
                     ###############################################################################################
                     comport_is_active = comport_is_On(self.comport)
@@ -10992,7 +10998,7 @@ class Ui_MainWindow(object):
                             msg_box_11.exec()
                             self.open_after_disconnection()
                             return
-                    bs = ser.readlines(ser.in_waiting)
+                    bs = read_serial_lines()
                     print(bs)
                     ################################################################################################
                     developer_tx_rx_content = f"\nDRx: {developer_executable_rx}\nDTx: {developer_executable_tx}"
@@ -11009,7 +11015,7 @@ class Ui_MainWindow(object):
                             msg_box_11.exec()
                             self.open_after_disconnection()
                             return
-                    bs = ser.readlines(ser.in_waiting)
+                    bs = read_serial_lines()
                     print(bs)
                     msg_box_11 = QMessageBox()
                     msg_box_11.setWindowTitle("Info")
@@ -11207,7 +11213,7 @@ class Ui_MainWindow(object):
             if Commands_file_user:
                 with open(file_path, 'a') as file:
                     file.write(f'\n{get_current_datetime()}   cd {command}\n')
-            lines = ser.readlines(ser.in_waiting)
+            lines = read_serial_lines()
         else:
             return
         comport_is_active = comport_is_On(self.comport)
@@ -11216,7 +11222,7 @@ class Ui_MainWindow(object):
             if Commands_file_user:
                 with open(file_path, 'a') as file:
                     file.write(f'\n{get_current_datetime()}   cat {actual_nvme}\n')
-            lines = ser.readlines(ser.in_waiting)
+            lines = read_serial_lines()
         else:
             return
         
@@ -11338,7 +11344,7 @@ class Ui_MainWindow(object):
                 if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f'\n{get_current_datetime()}   cd {command}\n')
-                lines = ser.readlines(ser.in_waiting)
+                lines = read_serial_lines()
             #print(lines)
             else:
                 msg_box_11 = QMessageBox()
@@ -11353,7 +11359,7 @@ class Ui_MainWindow(object):
                 if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f'\n{get_current_datetime()}   cat {actual_nvme}\n')
-                lines = ser.readlines(ser.in_waiting)
+                lines = read_serial_lines()
                 print(lines)
             else:
                 msg_box_11 = QMessageBox()
@@ -11441,14 +11447,14 @@ class Ui_MainWindow(object):
                                         msg_box_11.exec()
                                         self.open_after_disconnection() 
                                         return
-                                    response = ser.readlines(ser.in_waiting)
+                                    response = read_serial_lines()
                                     comport_is_active = comport_is_On(self.comport)
                                     if comport_is_active: 
                                         send_command(bytearray(f"sed -i '/^$/d' {actual_nvme}\n", 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f"\n{get_current_datetime()}   sed -i '/^$/d' {actual_nvme}\n")
-                                        response = ser.readlines(ser.in_waiting)
+                                        response = read_serial_lines()
                                         print(f"response: {response}")
                                     else:
                                         msg_box_11 = QMessageBox()
@@ -11832,7 +11838,7 @@ class Ui_MainWindow(object):
                     #if dirct is None:
                         #messagebox.showwarning("Error!", "Response not received within the timeout.\nPlease retry / check hardware connection!")
                         #return  # Stop execution
-                    #dirct = ser.readlines(ser.in_waiting)
+                    #dirct = read_serial_lines()
                     #decoded_lines = [line.decode('ascii').strip() for line in dirct]
                 
                     if back_btn_clicked:
@@ -12531,7 +12537,7 @@ class Ui_MainWindow(object):
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   ls -l\n')
-                                response_1 = ser.readlines(ser.in_waiting)
+                                response_1 = read_serial_lines()
                                 decoded_lines_1 = [line.decode() for line in response_1]
                                 print(decoded_lines_1)
                             else:
@@ -12670,7 +12676,7 @@ class Ui_MainWindow(object):
                                 msg_box_11.exec()
                                 self.open_after_disconnection()
                                 return
-                            response_1 = ser.readlines(ser.in_waiting)
+                            response_1 = read_serial_lines()
                             decoded_lines_1 = [line.decode() for line in response_1]
                             for line in decoded_lines_1:
                                 if filename_bin in line:
@@ -12840,7 +12846,7 @@ class Ui_MainWindow(object):
                                 msg_box_11.exec()
                                 self.open_after_disconnection()
                                 return
-                            response_1 = ser.readlines(ser.in_waiting)
+                            response_1 = read_serial_lines()
                             decoded_lines_1 = [line.decode() for line in response_1]
                             for line in decoded_lines_1:
                                 if filename_bin in line:
@@ -13034,7 +13040,7 @@ class Ui_MainWindow(object):
                                     msg_box_11.exec()
                                     self.open_after_disconnection()
                                     return
-                                lines = ser.readlines(ser.in_waiting)
+                                lines = read_serial_lines()
                                 print(lines)
                                 decoded_lines = [line.decode() for line in lines]
                                 for line in decoded_lines:
@@ -13194,7 +13200,7 @@ class Ui_MainWindow(object):
                                     if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True, destroy_root=True):
                                         return
                                     ########################################################################
-                                    lines = ser.readlines(ser.in_waiting)
+                                    lines = read_serial_lines()
                                     ###################################################################################
                                     
                                     if comport_is_active:
@@ -13307,7 +13313,7 @@ class Ui_MainWindow(object):
                                     if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True, destroy_root=True):
                                         return
                                     ########################################################################
-                                    lines = ser.readlines(ser.in_waiting)
+                                    lines = read_serial_lines()
                                     ###################################################################################
                                     
                                     if comport_is_active:
@@ -13419,7 +13425,7 @@ class Ui_MainWindow(object):
                                             root.destroy()
                                             self.open_after_disconnection()
                                             return
-                                        lines = ser.readlines(ser.in_waiting)
+                                        lines = read_serial_lines()
                                         
                                     line_to_edit = current_path+str(selected_folder).split(".bin")[0]
                                     print(line_to_edit)
@@ -13479,7 +13485,7 @@ class Ui_MainWindow(object):
                                              root.destroy()
                                              self.open_after_disconnection()
                                              return
-                                        lines = ser.readlines(ser.in_waiting)
+                                        lines = read_serial_lines()
                                     self.check_selected_files_availability()
                         else:
                             messagebox.showwarning("Select a file", "No file is selected to delete!")
@@ -14072,7 +14078,7 @@ class Ui_MainWindow(object):
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   clear\n')
-                    ser.readlines(ser.in_waiting)
+                    read_serial_lines()
                 else:
                     msg_box_11 = QMessageBox()
                     msg_box_11.setWindowTitle("Error!")
@@ -14086,7 +14092,7 @@ class Ui_MainWindow(object):
                     self.ensure_interface_disconnection()
                 try:
                     ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-                    ser.readlines(ser.in_waiting)
+                    read_serial_lines()
                 except serial.SerialException as e:
                     msg_box_2 = QMessageBox()
                     msg_box_2.setWindowTitle("Error!")
@@ -14101,7 +14107,7 @@ class Ui_MainWindow(object):
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
-                    lines = ser.readlines(ser.in_waiting)
+                    lines = read_serial_lines()
                 else:
                     msg_box_11 = QMessageBox()
                     msg_box_11.setWindowTitle("Error!")
@@ -14116,7 +14122,7 @@ class Ui_MainWindow(object):
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cat "{filename_txt}" ; (echo END) > /dev/null\n')
-                    #lines = ser.readlines(ser.in_waiting)
+                    #lines = read_serial_lines()
                     
                     lines = self.read_Response_END()  # Call the function
                     if lines is None:
@@ -14278,13 +14284,13 @@ class Ui_MainWindow(object):
                         msg_box_11.exec()
                         self.open_after_disconnection()
                         return
-                    ser.readlines(ser.in_waiting)
+                    read_serial_lines()
                     self.variable_names = []"""
                 ###############################################################################################
                 #self.variable_names.append(line)
                 #print(file_dictionary)
                 #print(self.variable_names)
-                #ser.readlines(ser.in_waiting)
+                #read_serial_lines()
                 self.populate_table()
                 #####################################################################################
                 config_button = True
@@ -15077,7 +15083,7 @@ class Ui_MainWindow(object):
                             self.open_after_disconnection()
                             return
                       
-                        lines = ser.readlines(ser.in_waiting)
+                        lines = read_serial_lines()
                         print(f'12{lines}')
                         decoded_lines = [line.decode() for line in lines]
                         print(decoded_lines)
@@ -15497,7 +15503,7 @@ class Ui_MainWindow(object):
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f"\n{get_current_datetime()}   {final_string}")
-                                lines = ser.readlines(ser.in_waiting)
+                                lines = read_serial_lines()
                                 decoded_lines = [line.decode() for line in lines]
                                 
                             else:
@@ -15926,7 +15932,7 @@ class Ui_MainWindow(object):
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f"\n{get_current_datetime()}   {final_string}")
-                                lines = ser.readlines(ser.in_waiting)
+                                lines = read_serial_lines()
                                 decoded_lines = [line.decode() for line in lines]
                             else:
                                 self.comboBox.setEnabled(True)
@@ -16139,7 +16145,7 @@ class Ui_MainWindow(object):
                             msg_box_11.exec()
                             self.open_after_disconnection()
                             return
-                        bs = ser.readlines(ser.in_waiting)
+                        bs = read_serial_lines()
                         ########################################################################
                         #self.label_current_file.setText(f"{file_count+1}")
                         #self.label_current_file.setStyleSheet("color: red;") 
@@ -16338,10 +16344,10 @@ class Ui_MainWindow(object):
                 file_count += 1
                 count_one = 0
                 #send_command(b'\x03')  # Send Ctrl+C to stop the recording
-                bs = ser.readlines(ser.in_waiting)
+                bs = read_serial_lines()
                 ########################################################################
                 #print("yes")
-                bs = ser.readlines(ser.in_waiting)
+                bs = read_serial_lines()
                 ########################################################################
                 #print("yes2.5")   
                 #print(current_time)
@@ -16470,7 +16476,7 @@ class Ui_MainWindow(object):
                     #flag_raised_for_stop_Recording = True
                     break
         send_command(bytearray('clear\n', 'ascii'))
-        clear_lines = ser.readlines(ser.in_waiting)
+        clear_lines = read_serial_lines()
         print("clear lines are ", clear_lines)
         current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         duration = time_to_seconds(self.duration_value)
@@ -16612,7 +16618,7 @@ class Ui_MainWindow(object):
             if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f"\n{get_current_datetime()}   {final_string}")
-            lines = ser.readlines(ser.in_waiting)
+            lines = read_serial_lines()
             decoded_lines = [line.decode() for line in lines]
         else:
             self.timer.stop()
