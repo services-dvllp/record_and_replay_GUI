@@ -7818,6 +7818,10 @@ class Ui_MainWindow(object):
     def get_Rate(self, text):
         self.rate = text.strip()
 
+    def read_serial_line(self):
+        global ser
+        return ser.readline().decode(errors='ignore')
+
     def rtcm_record_command(self, filepath):
         filepath = filepath
         if device_id == "" and bus_no == "":
@@ -7854,7 +7858,7 @@ class Ui_MainWindow(object):
             global replay_terminated, replay_started
             while True:
                 if read_Replay_response:
-                    line = ser.readline().decode(errors='ignore')
+                    line = self.read_serial_line()
                     print(line)
                     if "Terminated before the full duration!" in line:
                         replay_terminated = True
@@ -14552,7 +14556,7 @@ class Ui_MainWindow(object):
             while True:
                 if read_response:
                     #print("read")
-                    line = ser.readline().decode(errors='ignore')
+                    line = self.read_serial_line()
                     if "Terminated before the full duration!" in line:
                         terminated = True
                         break
@@ -16468,7 +16472,7 @@ class Ui_MainWindow(object):
             global read_response, recording_started, terminated, flag_raised_for_stop_Recording
             while True:
                 if read_response:
-                    line = ser.readline().decode(errors='ignore')
+                    line = self.read_serial_line()
                     if "Terminated before the full duration!" in line:
                         terminated = True
                         break
