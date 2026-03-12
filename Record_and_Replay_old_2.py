@@ -7,8 +7,6 @@ import datetime
 import threading
 #from datetime import datetime
 import serial
-import serial.tools.list_ports
-from serial.tools import list_ports
 from serial_interface_utils import (
     connect_to_interface,
     disconnect_interface,
@@ -17,6 +15,9 @@ from serial_interface_utils import (
     read_serial_lines,
     read_serial_decoded_line,
     read_serial_response_end,
+    list_hardware_com_ports,
+    is_active_comport_online,
+    monitor_serial_disconnect_status,
 )
 
 from PIL import Image, ImageTk
@@ -345,31 +346,14 @@ if Commands_file_user:
                 file.write(f"\nDate: {date}\nTime: {start_time}\n\n")
 
 ##################################################################################
-def list_hardware_com_ports():
-    ports = serial.tools.list_ports.comports()
-    hardware_ports = []
-    for port in ports:
-        # Check for common hardware identifiers in the description or hardware ID
-        if port.description and "USB" in port.description.upper() or port.hwid and "USB" in port.hwid.upper():
-            hardware_ports.append(port.device)
-    return hardware_ports
-
 def interface_is_online(active_comport):
     if interface_in_use == 0:
-        ports = list_hardware_com_ports()
-        if active_comport in ports:
-            return True
-        else:
-            return False
+        return is_active_comport_online(active_comport)
     else:
         print("wifi")
     
 def interface_is_onlineRTCM(active_comport):
-    ports = list_hardware_com_ports()
-    if active_comport in ports:
-        return True
-    else:
-        return False
+    return is_active_comport_online(active_comport)
 
 def comport_is_On_record_replay(active_comport):
     global disconnected_comport_while_recording_replaying
@@ -713,21 +697,15 @@ class Worker(QThread):
         global disconnected_comport_while_recording_replaying
         # Infinite loop controlled by `self.running`
         if interface_in_use == 0:
-            while self.running:
-                ports = list_hardware_com_ports()
-                if checked_both_without_HWUSB:
-                    if active_comport_used and active_com_port_used_for_rtcm in ports:
-                        disconnected_comport_while_recording_replaying = False
-                    else:
-                        disconnected_comport_while_recording_replaying = True
-                    time.sleep(0.5)  # Simulate work being done
-                else:
-                    if active_comport_used in ports:
-                        print("helloo")
-                        disconnected_comport_while_recording_replaying = False
-                    else:
-                        disconnected_comport_while_recording_replaying = True
-                    time.sleep(0.5)
+            monitor_serial_disconnect_status(
+                is_running=lambda: self.running,
+                checked_both_without_hwusb=checked_both_without_HWUSB,
+                active_comport_used=active_comport_used,
+                active_com_port_used_for_rtcm=active_com_port_used_for_rtcm,
+                set_disconnected_status=lambda value: globals().__setitem__(
+                    "disconnected_comport_while_recording_replaying", value
+                ),
+            )
         else:
             print("wifi")
     def stop(self):
