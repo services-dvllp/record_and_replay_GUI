@@ -5745,8 +5745,6 @@ class Ui_MainWindow(object):
         global ser, interface_in_use
         if interface_in_use == 0:
             disconnect_interface(ser)
-        else:
-            print("wifi")
 
     def ensure_interface_connection(self, timeout_value=timeout_time, show_disconnection_dialog=False, destroy_root=False):
         global ser, root
@@ -5769,8 +5767,6 @@ class Ui_MainWindow(object):
                 msg_box_2.setText("You cannot open this COM Port!")
                 msg_box_2.exec()
             return False
-        else:
-            print("wifi")
 
     def interface_check(self):
         global interface_in_use
