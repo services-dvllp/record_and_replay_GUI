@@ -21,6 +21,7 @@ from serial_interface_utils import (
     is_active_comport_online,
     monitor_serial_disconnect_status,
 )
+from wifi_interface_utils import connect_to_interface as connect_to_wifi_interface
 from interface_dependent_functions import (
     send_command_interface_handle,
     read_lines_interface_handle,
@@ -5777,13 +5778,23 @@ class Ui_MainWindow(object):
             if self.comport == WIFI_INTERFACE_OPTION:
                 print("Router WiFi")
                 ssh_url = ssh_fixed_url
-                ssh_password = ssh_password
             elif self.comport == WIFI_INTERFACE_OPTION_2:
                 print("Board WiFi")
                 ssh_url = f"{ssh_username}@{self.lineEdit_hostname.text().strip()}.local"
-                ssh_password = ssh_password
             else:
-                print("Unknown WiFi interface")     
+                print("Unknown WiFi interface")
+                return False
+
+            ser, error_message = connect_to_wifi_interface(ser, ssh_url, ssh_password, timeout_value)
+            if ser is not None:
+                print("WiFi SSH connection established successfully.")
+                return True
+
+            msg_box_2 = QMessageBox()
+            msg_box_2.setWindowTitle("Error!")
+            msg_box_2.setText(f"Unable to connect over WiFi SSH: {error_message}")
+            msg_box_2.exec()
+            return False
 
     def interface_check(self):
         global interface_in_use
