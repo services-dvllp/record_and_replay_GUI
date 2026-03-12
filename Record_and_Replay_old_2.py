@@ -354,24 +354,37 @@ def list_hardware_com_ports():
             hardware_ports.append(port.device)
     return hardware_ports
 
-def comport_is_On(active_comport):
+def interface_is_online(active_comport):
+    if interface_in_use == 0:
+        ports = list_hardware_com_ports()
+        if active_comport in ports:
+            return True
+        else:
+            return False
+    else:
+        print("wifi")
+    
+def interface_is_onlineRTCM(active_comport):
     ports = list_hardware_com_ports()
     if active_comport in ports:
         return True
     else:
         return False
-    
+
 def comport_is_On_record_replay(active_comport):
     global disconnected_comport_while_recording_replaying
-    while True:
-        ports = list_hardware_com_ports()
-        if active_comport in ports:
-            disconnected_comport_while_recording_replaying = False
-            print(ports)
-        else:
-            disconnected_comport_while_recording_replaying = True
-            print("error")
-        time.sleep(1)
+    if interface_in_use == 0:
+        while True:
+            ports = list_hardware_com_ports()
+            if active_comport in ports:
+                disconnected_comport_while_recording_replaying = False
+                print(ports)
+            else:
+                disconnected_comport_while_recording_replaying = True
+                print("error")
+            time.sleep(1)
+    else:
+        print("wifi")
 ###################### Verify file name and folder name ##########################
 def validate_file_and_folder_name_linux(file_name):
     global file_name_starts_with_dot
@@ -699,21 +712,24 @@ class Worker(QThread):
     def run(self):
         global disconnected_comport_while_recording_replaying
         # Infinite loop controlled by `self.running`
-        while self.running:
-            ports = list_hardware_com_ports()
-            if checked_both_without_HWUSB:
-                if active_comport_used and active_com_port_used_for_rtcm in ports:
-                    disconnected_comport_while_recording_replaying = False
+        if interface_in_use == 0:
+            while self.running:
+                ports = list_hardware_com_ports()
+                if checked_both_without_HWUSB:
+                    if active_comport_used and active_com_port_used_for_rtcm in ports:
+                        disconnected_comport_while_recording_replaying = False
+                    else:
+                        disconnected_comport_while_recording_replaying = True
+                    time.sleep(0.5)  # Simulate work being done
                 else:
-                    disconnected_comport_while_recording_replaying = True
-                time.sleep(0.5)  # Simulate work being done
-            else:
-                if active_comport_used in ports:
-                    print("helloo")
-                    disconnected_comport_while_recording_replaying = False
-                else:
-                    disconnected_comport_while_recording_replaying = True
-                time.sleep(0.5)
+                    if active_comport_used in ports:
+                        print("helloo")
+                        disconnected_comport_while_recording_replaying = False
+                    else:
+                        disconnected_comport_while_recording_replaying = True
+                    time.sleep(0.5)
+        else:
+            print("wifi")
     def stop(self):
         self.running = False  # Set flag to stop the loop
 #############################################################################################################
@@ -857,7 +873,7 @@ class Ui_MainWindow(object):
                         if filename in line:
                             file_path_of_file = str(line).strip()
                      
-                    comport_is_active = comport_is_On(self.comport)
+                    comport_is_active = interface_is_online(self.comport)
                     actual_directory = check_command(file_path_of_file)
                     actual_filename = check_command(filename)
                     if comport_is_active: 
@@ -1135,7 +1151,7 @@ class Ui_MainWindow(object):
                         self.fs_system_submit_btn.setEnabled(False)
                         self.label_fs_system_display.setEnabled(False)
                         #############################################################################
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         command = check_command(current_path_)
                         if comport_is_active:
                             send_command(bytearray(f'cd {command}\n', 'ascii'))
@@ -1160,7 +1176,7 @@ class Ui_MainWindow(object):
                             msg_box_11.exec()
                             self.open_after_disconnection()
                             return
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         actual_filename = check_command(filename_txt)
                         
                         if comport_is_active:
@@ -1210,7 +1226,7 @@ class Ui_MainWindow(object):
                             print(f"line: {line}")
                             if file_name_needs_to_deleted in line:
                                 #############################################################################
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 command = check_command(current_path_)
                                 if comport_is_active:
                                     send_command(bytearray(f'cd {command}\n', 'ascii'))
@@ -1234,7 +1250,7 @@ class Ui_MainWindow(object):
                                     msg_box_11.exec()
                                     self.open_after_disconnection()
                                     return
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 actual_filename = check_command(filename_txt)
                                 if comport_is_active:
                                     send_command(bytearray(f'sed -i "{count}d" {actual_filename} ; (echo END) > /dev/null\n', 'ascii'))
@@ -1260,7 +1276,7 @@ class Ui_MainWindow(object):
                                     msg_box_11.exec()
                                     self.open_after_disconnection()
                                     return
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 if comport_is_active:
                                     send_command(bytearray(f'sed -i "/^$/d" {actual_filename} ; (echo END) > /dev/null\n', 'ascii'))
                                     if Commands_file_user:
@@ -4340,7 +4356,7 @@ class Ui_MainWindow(object):
             return
 
         main_func_called = False
-        if not comport_is_On(self.comport):
+        if not interface_is_online(self.comport):
             return
 
         print(fs_system)
@@ -4433,7 +4449,7 @@ class Ui_MainWindow(object):
 
         main_func_called = False
         bs = read_lines()
-        if not comport_is_On(self.comport):
+        if not interface_is_online(self.comport):
             return
 
         print(fs_system)
@@ -5790,7 +5806,7 @@ class Ui_MainWindow(object):
             file.write(f'{get_current_datetime()}   clear\n')
         lines = self.read_Response_END() 
         print(lines)
-        comport_is_active = comport_is_On(self.comport)
+        comport_is_active = interface_is_online(self.comport)
         if comport_is_active: 
             
             send_command(bytearray(f'lsusb ; (echo END) > /dev/null\n', 'ascii'))
@@ -6402,7 +6418,7 @@ class Ui_MainWindow(object):
                 self.pushButton_refresh_config.setIconSize(QSize(30, 30))  # Set icon size"""
 
                 lines = read_lines()
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
          
                 if comport_is_active:   
                     send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
@@ -6417,7 +6433,7 @@ class Ui_MainWindow(object):
                     msg_box_11.exec()
                     self.open_after_disconnection()
                     return
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
           
                 if comport_is_active:               
                     send_command(bytearray(f'cat "{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
@@ -6529,7 +6545,7 @@ class Ui_MainWindow(object):
                            
                             line_to_edit = filename_txt_string_editor(line_to_edit)
                            
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
 
                             if comport_is_active:
                                 send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
@@ -6566,7 +6582,7 @@ class Ui_MainWindow(object):
                     msg_box_11.setWindowTitle("Info")
                     msg_box_11.setText(f"The file {filename_txt} not found\n\nA new {filename_txt} file is created\n\nDirectory:{directory}")
                     msg_box_11.exec()
-                    comport_is_active = comport_is_On(self.comport)
+                    comport_is_active = interface_is_online(self.comport)
                  
                     if comport_is_active: 
                         send_command(bytearray(f'cd "{directory}"\n', 'ascii'))
@@ -6580,7 +6596,7 @@ class Ui_MainWindow(object):
                         msg_box_11.exec()
                         self.open_after_disconnection()
                         return
-                    comport_is_active = comport_is_On(self.comport)
+                    comport_is_active = interface_is_online(self.comport)
                 
                     if comport_is_active: 
                         send_command(bytearray(f'touch "{filename_txt}"\n', 'ascii'))
@@ -6902,7 +6918,7 @@ class Ui_MainWindow(object):
                     
                     if boot:
                         boot = False
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active:
                             send_command(b'\x03')
                             if Commands_file_user:
@@ -6915,7 +6931,7 @@ class Ui_MainWindow(object):
                             msg_box_11.exec()
                             self.open_after_disconnection()
                             return
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active:
                             send_command(bytearray('clear\n', 'ascii'))
                             if Commands_file_user:
@@ -7849,7 +7865,7 @@ class Ui_MainWindow(object):
             command = f"/home/root/adc4bits/libiio/build/examples/RTCMrx {self.baudrate_rtcm} {bus_no} {device_id} >{filepath}.rtcm&"
         with open(file_path, 'a') as file:
             file.write(f"\n{get_current_datetime()}   {command}")
-        comport_is_active = comport_is_On(self.comport)
+        comport_is_active = interface_is_online(self.comport)
         if comport_is_active:
             send_command(bytearray(command,'ascii'))
             with open(file_path, 'a') as file:
@@ -7864,7 +7880,7 @@ class Ui_MainWindow(object):
             command = f"/home/root/adc4bits/libiio/build/examples/RTCMtx {self.baudrate_rtcm} {filepath} {autoreplay} {startoffset_HW_rtcm} {runduration_HW_rtcm} {bus_no} {device_id}&"
         with open(file_path, 'a') as file:
             file.write(f"\n{get_current_datetime()}   {command}")
-        comport_is_active = comport_is_On(self.comport)
+        comport_is_active = interface_is_online(self.comport)
         if comport_is_active:
             send_command(bytearray(command,'ascii'))
             with open(file_path, 'a') as file:
@@ -7902,7 +7918,7 @@ class Ui_MainWindow(object):
         if not replay_started:
             ##############################################
             if checked_both_without_HWUSB:
-                comport_2_rtcm = comport_is_On(self.comport_rtcm)
+                comport_2_rtcm = interface_is_onlineRTCM(self.comport_rtcm)
                 if not comport_2_rtcm:
                     msg_box_2 = QMessageBox()
                     msg_box_2.setWindowTitle("Missing Data")
@@ -8219,7 +8235,7 @@ class Ui_MainWindow(object):
                                 )
                                 #print("the command is ",final_string_replay)
                             if checked_both_without_HWUSB:
-                                comport_2_rtcm = comport_is_On(self.comport_rtcm)
+                                comport_2_rtcm = interface_is_onlineRTCM(self.comport_rtcm)
                                 if not comport_2_rtcm:
                                     msg_box_2 = QMessageBox()
                                     msg_box_2.setWindowTitle("Missing Data")
@@ -8228,7 +8244,7 @@ class Ui_MainWindow(object):
                                     self.open_after_disconnection()
                                     return
                                 
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
                             if comport_is_active: 
                                 path_auto = Lg_path
                                 filename_auto = f"{real_File_name}.gpio"
@@ -8556,7 +8572,7 @@ class Ui_MainWindow(object):
                                     f'| tee -i "{Lg_path}{real_File_name}.txlog" \n'                    
                                 )   
                             if checked_both_without_HWUSB:
-                                comport_2_rtcm = comport_is_On(self.comport_rtcm)
+                                comport_2_rtcm = interface_is_onlineRTCM(self.comport_rtcm)
                                 if not comport_2_rtcm:
                                     msg_box_2 = QMessageBox()
                                     msg_box_2.setWindowTitle("Missing Data")
@@ -8565,7 +8581,7 @@ class Ui_MainWindow(object):
                                     self.open_after_disconnection()
                                     return
                                 
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
                             if comport_is_active: 
                                 path_auto = Lg_path
                                 filename_auto = f"{real_File_name}.gpio"
@@ -8899,7 +8915,7 @@ class Ui_MainWindow(object):
             with open(file_path, 'a') as file:
                 file.write(f'\n{get_current_datetime()}   b"\\x03"\n')
             #send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/command_set01.sh\n', 'ascii'))
-            comport_is_active = comport_is_On(self.comport)
+            comport_is_active = interface_is_online(self.comport)
             if comport_is_active: 
                 send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/command_set01.sh ; /home/root/adc4bits/libiio/command_set01.sh ; (echo END) > /dev/null\n', 'ascii'))
                 if Commands_file_user:
@@ -9151,7 +9167,7 @@ class Ui_MainWindow(object):
             self.radioButton_Rx_2.setVisible(False)
             if self.radioButton_rfmdmode.isChecked():
                 print("RFMD mode selected")
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
                 if comport_is_active:
                     send_command(bytearray("devmem 0xB0000000 w 8\n",'ascii'))
                     send_command(bytearray("/home/root/adc4bits/libiio/build/utils/iio_reg ad9361-phy 0x0A 0x10\n",'ascii'))
@@ -9160,7 +9176,7 @@ class Ui_MainWindow(object):
                         file.write(f"{get_current_datetime()}   /home/root/adc4bits/libiio/build/utils/iio_reg ad9361-phy 0x0A 0x10\n")
             else:
                 print("RFMD mode not selected")
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
                 if comport_is_active:
                     send_command(bytearray("devmem 0xB0000000 w 0\n",'ascii'))
                     send_command(bytearray("/home/root/adc4bits/libiio/build/utils/iio_reg ad9361-phy 0x0A 0xa\n",'ascii'))
@@ -9187,7 +9203,7 @@ class Ui_MainWindow(object):
         # Execute the message box
         selected_reboot = msg_box_3.exec()
         if selected_reboot == QMessageBox.StandardButton.Yes:
-            comport_is_active = comport_is_On(self.comport)
+            comport_is_active = interface_is_online(self.comport)
             if comport_is_active: 
                 send_command(bytearray(shutdown_command,'ascii'))   
                 if Commands_file_user:
@@ -9250,7 +9266,7 @@ class Ui_MainWindow(object):
         # Execute the message box
         selected_reboot = msg_box_3.exec()
         if selected_reboot == QMessageBox.StandardButton.Yes:
-            comport_is_active = comport_is_On(self.comport)
+            comport_is_active = interface_is_online(self.comport)
             if comport_is_active: 
                 send_command(bytearray(reboot_command,'ascii'))   
                 if Commands_file_user:
@@ -9314,7 +9330,7 @@ class Ui_MainWindow(object):
             #self.check_comport_Regularly()
             self.update_com_ports()
             self.update_com_ports_rtcm()
-            comport_is_active = comport_is_On(self.comport)
+            comport_is_active = interface_is_online(self.comport)
             if comport_is_active: 
                 send_command(bytearray(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n', 'ascii'))
                 if Commands_file_user:
@@ -9405,7 +9421,7 @@ class Ui_MainWindow(object):
                         self.timer_1.stop()
                         if checked_both_without_HWUSB or HW_USB_in_use:
                             if (HW_USB_in_use):
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 if comport_is_active: 
                                     send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                                     with open(file_path, 'a') as file:
@@ -9416,7 +9432,7 @@ class Ui_MainWindow(object):
                         read_Replay_response = False
                         time.sleep(1)
                         count_one_replay = 0
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(b'\x03')
                             if Commands_file_user:
@@ -9513,7 +9529,7 @@ class Ui_MainWindow(object):
                 self.stop_GPIO_record_replay()
                 if checked_both_without_HWUSB or HW_USB_in_use:
                     if (HW_USB_in_use):
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
@@ -9566,7 +9582,7 @@ class Ui_MainWindow(object):
                 self.stop_GPIO_record_replay()
                 if checked_both_without_HWUSB or HW_USB_in_use:
                     if (HW_USB_in_use):
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
@@ -9595,7 +9611,7 @@ class Ui_MainWindow(object):
                             read_Replay_response = False
                             if checked_both_without_HWUSB or HW_USB_in_use:
                                 if (HW_USB_in_use):
-                                    comport_is_active = comport_is_On(self.comport)
+                                    comport_is_active = interface_is_online(self.comport)
                                     if comport_is_active: 
                                         send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                                         with open(file_path, 'a') as file:
@@ -9644,7 +9660,7 @@ class Ui_MainWindow(object):
                             read_Replay_response = False
                             if checked_both_without_HWUSB or HW_USB_in_use:
                                 if (HW_USB_in_use):
-                                    comport_is_active = comport_is_On(self.comport)
+                                    comport_is_active = interface_is_online(self.comport)
                                     if comport_is_active: 
                                         send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                                         with open(file_path, 'a') as file:
@@ -9930,13 +9946,13 @@ class Ui_MainWindow(object):
                 browse_folder = True
                 back_btn_clicked = False
                 path = f'cd\ncd {current_path}\nls -l\n'
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
                 
                 # Send initial commands to Serial
                 path = f'cd\ncd {current_path}\nls -l\n'
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
                 command = check_command(current_path)
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
                 if comport_is_active: 
                     send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n', 'ascii'))
                     if Commands_file_user:
@@ -10088,7 +10104,7 @@ class Ui_MainWindow(object):
 
                     back_button.pack_forget()
                     if back_btn_clicked:
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray(f'pwd ; (echo END) > /dev/null\n', 'ascii'))
                             if Commands_file_user:
@@ -10115,7 +10131,7 @@ class Ui_MainWindow(object):
                             #path = f'cd\ncd {directory}\nls -l\n'
                             current_path = f'{directory}' 
                             print(current_path)
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         print(current_path)
                         command = check_command(current_path)
                         send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n', 'ascii'))
@@ -10126,7 +10142,7 @@ class Ui_MainWindow(object):
                     else:
                         #path = f'cd\ncd {dirct}/{selected_folder}/\nls -l\n'
                         current_path = f"{current_path}{selected_folder}/"
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         command = check_command(current_path)
                         if comport_is_active: 
                             send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command} --mode dirs; (echo END) > /dev/null\n', 'ascii'))
@@ -10284,7 +10300,7 @@ class Ui_MainWindow(object):
                                 #print(f"Creating new folder: {folder_name}")  # Placeholder action
                                 variable = f"{current_path}{folder_name}"
                                 
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 if comport_is_active: 
                                     send_command(bytearray(f'mkdir "{variable}" ; (echo END) > /dev/null\n', 'ascii'))
                                     if Commands_file_user:
@@ -10369,7 +10385,7 @@ class Ui_MainWindow(object):
                                 listbox.insert(selected_indices[0], new_folder_name)
 
                                 # Execute the rename command
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 print(current_path)
                                 
                                 
@@ -10433,7 +10449,7 @@ class Ui_MainWindow(object):
                                         test_flag_2 = False
                                     
                                         line_to_edit = filename_txt_string_editor(line_to_edit)
-                                        comport_is_active = comport_is_On(self.comport)
+                                        comport_is_active = interface_is_online(self.comport)
 
                                         if comport_is_active:
                                             send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
@@ -10482,7 +10498,7 @@ class Ui_MainWindow(object):
                                 folders_available.remove(selected_folder)
                                 listbox.delete(selected_indices[0])
                                 #print(f"Deleting folder: {selected_folder}")  # Placeholder action
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
         
                                 if comport_is_active: 
                                     send_command(bytearray(f'rm -r "{current_path}{selected_folder}" ; pwd\n', 'ascii'))
@@ -10621,7 +10637,7 @@ class Ui_MainWindow(object):
         
         QApplication.processEvents()  # Force UI update
 
-        if comport_is_On(self.comport):   
+        if interface_is_online(self.comport):   
             send_command(bytearray(f'cd /home/root/adc4bits/libiio/build/ && cmake ../ -DWITH_EXAMPLES=ON -DWITH_ZSTD=OFF && make clean && make -j4\n', 'ascii'))
 
             if Commands_file_user:
@@ -10703,7 +10719,7 @@ class Ui_MainWindow(object):
         self.pushButton_login.setEnabled(False)
         #time.sleep(2)
         global download
-        comport_is_active = comport_is_On(self.comport)
+        comport_is_active = interface_is_online(self.comport)
         if comport_is_active:   
                     send_command(bytearray(f'cd /home/root/adc4bits/libiio/build/ && cmake ../ -DWITH_EXAMPLES=ON -DWITH_ZSTD=OFF && make clean && make -j4\n', 'ascii'))
                     if Commands_file_user:
@@ -10762,7 +10778,7 @@ class Ui_MainWindow(object):
              
     def give_nvme_info(self):
         global flag_raised
-        comport_is_active = comport_is_On(self.comport)
+        comport_is_active = interface_is_online(self.comport)
         if comport_is_active: 
             send_command(bytearray(f'lsblk ; (echo END) > /dev/null\n', 'ascii'))
             if Commands_file_user:
@@ -10832,7 +10848,7 @@ class Ui_MainWindow(object):
         fs_system = self.fs_system_GUI 
         directory = read_selected_file_path    
         command = check_command(directory)
-        comport_is_active = comport_is_On(self.comport)
+        comport_is_active = interface_is_online(self.comport)
         if comport_is_active: 
             send_command(bytearray(f'cd {command}\n', 'ascii'))
             if Commands_file_user:
@@ -10847,7 +10863,7 @@ class Ui_MainWindow(object):
             self.open_after_disconnection()
             return
     
-        comport_is_active = comport_is_On(self.comport)
+        comport_is_active = interface_is_online(self.comport)
         actual_nvme = check_command(nvmelabel_file)
         actual_filename = check_command(filename_txt)
         if comport_is_active:                    
@@ -10893,7 +10909,7 @@ class Ui_MainWindow(object):
                 for line in decoded_lines:
                     count += 1
                     if "fs_system:" in line:
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         command = check_command(read_selected_file_path)
                         if comport_is_active: 
                             send_command(bytearray(f'cd {command}\n', 'ascii'))
@@ -10908,7 +10924,7 @@ class Ui_MainWindow(object):
                             self.open_after_disconnection()
                             return
                             
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         actual_nvme = check_command(nvmelabel_file)
                         actual_filename = check_command(filename_txt)
                         if comport_is_active: 
@@ -10924,7 +10940,7 @@ class Ui_MainWindow(object):
                             self.open_after_disconnection()
                             return
 
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray(f"sed -i '/^$/d' {actual_nvme}\n", 'ascii'))
                             if Commands_file_user:
@@ -10938,7 +10954,7 @@ class Ui_MainWindow(object):
                             self.open_after_disconnection()
                             return
                         new_lines = f"fs_system: {fs_system}"
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray(f"echo '{new_lines}'>>{actual_nvme}\n", 'ascii'))
                             if Commands_file_user:
@@ -10955,7 +10971,7 @@ class Ui_MainWindow(object):
                         
         elif "No such file or directory" in (decoded_lines[-1]):
                     ###########################################################################################
-                    comport_is_active = comport_is_On(self.comport)
+                    comport_is_active = interface_is_online(self.comport)
                     command = check_command(directory)
                     if comport_is_active: 
                         send_command(bytearray(f'cd {command}\n', 'ascii'))
@@ -10970,7 +10986,7 @@ class Ui_MainWindow(object):
                             self.open_after_disconnection()
                             return
                     ###########################################################################################
-                    comport_is_active = comport_is_On(self.comport)
+                    comport_is_active = interface_is_online(self.comport)
                     actual_nvme = check_command(nvmelabel_file)
                     actual_filename = check_command(filename_txt)
                     if comport_is_active: 
@@ -10988,7 +11004,7 @@ class Ui_MainWindow(object):
                     #############################################################################################
                     text_file_content = "fs_system: /dev/"
                     tx_rx_file_content = f"\nRx: {executable_rx}\nTx: {executable_tx}"
-                    comport_is_active = comport_is_On(self.comport)
+                    comport_is_active = interface_is_online(self.comport)
                     if comport_is_active: 
                         send_command(bytearray(f'echo  "{text_file_content}">> {actual_nvme}\n', 'ascii'))
                         if Commands_file_user:
@@ -11005,7 +11021,7 @@ class Ui_MainWindow(object):
                     bs = read_lines()
                     print(bs)
                     ###############################################################################################
-                    comport_is_active = comport_is_On(self.comport)
+                    comport_is_active = interface_is_online(self.comport)
                     if comport_is_active: 
                         send_command(bytearray(f'echo  "{tx_rx_file_content}">> {actual_nvme}\n', 'ascii'))
                         if Commands_file_user:
@@ -11022,7 +11038,7 @@ class Ui_MainWindow(object):
                     print(bs)
                     ################################################################################################
                     developer_tx_rx_content = f"\nDRx: {developer_executable_rx}\nDTx: {developer_executable_tx}"
-                    comport_is_active = comport_is_On(self.comport)
+                    comport_is_active = interface_is_online(self.comport)
                     if comport_is_active: 
                         send_command(bytearray(f'echo  "{developer_tx_rx_content}">> {actual_nvme}\n', 'ascii'))
                         if Commands_file_user:
@@ -11224,7 +11240,7 @@ class Ui_MainWindow(object):
         else:
             current_in_use = "Released"
         
-        comport_is_active = comport_is_On(self.comport)
+        comport_is_active = interface_is_online(self.comport)
         actual_nvme = check_command(nvmelabel_file)
         actual_filename = check_command(filename_txt)
         command = check_command(read_selected_file_path)
@@ -11236,7 +11252,7 @@ class Ui_MainWindow(object):
             lines = read_lines()
         else:
             return
-        comport_is_active = comport_is_On(self.comport)
+        comport_is_active = interface_is_online(self.comport)
         if comport_is_active:                       
             send_command(bytearray(f'cat {actual_nvme}\n', 'ascii'))
             if Commands_file_user:
@@ -11355,7 +11371,7 @@ class Ui_MainWindow(object):
                 self.label_developer.setVisible(False)
             
             directory = read_selected_file_path   
-            comport_is_active = comport_is_On(self.comport)
+            comport_is_active = interface_is_online(self.comport)
             command = check_command(read_selected_file_path)
             actual_nvme = check_command(nvmelabel_file)
             actual_filename = check_command(filename_txt)
@@ -11373,7 +11389,7 @@ class Ui_MainWindow(object):
                 msg_box_11.exec() 
                 self.open_after_disconnection()
                 return
-            comport_is_active = comport_is_On(self.comport)
+            comport_is_active = interface_is_online(self.comport)
             if comport_is_active:                      
                 send_command(bytearray(f'cat {actual_nvme}\n', 'ascii'))
                 if Commands_file_user:
@@ -11422,7 +11438,7 @@ class Ui_MainWindow(object):
                                 line_tx_rx_count += 1
                                 if "DRx:" in line:
                                     #############################################################################
-                                    comport_is_active = comport_is_On(self.comport)
+                                    comport_is_active = interface_is_online(self.comport)
                                     command = check_command(read_selected_file_path)
                                     if comport_is_active: 
                                         send_command(bytearray(f'cd {command}\n', 'ascii'))
@@ -11436,7 +11452,7 @@ class Ui_MainWindow(object):
                                         msg_box_11.exec()
                                         self.open_after_disconnection() 
                                         return
-                                    comport_is_active = comport_is_On(self.comport)
+                                    comport_is_active = interface_is_online(self.comport)
                                     actual_nvme = check_command(nvmelabel_file)
                                     actual_filename = check_command(filename_txt)
                                     if comport_is_active: 
@@ -11454,7 +11470,7 @@ class Ui_MainWindow(object):
                                     
 
                                     new_lines = f"\nDRx: {developer_executable_rx}\nDTx: {developer_executable_tx}"
-                                    comport_is_active = comport_is_On(self.comport)
+                                    comport_is_active = interface_is_online(self.comport)
                                     if comport_is_active: 
                                         send_command(bytearray(f'echo "{new_lines}">>{actual_nvme}\n', 'ascii'))
                                         if Commands_file_user:
@@ -11468,7 +11484,7 @@ class Ui_MainWindow(object):
                                         self.open_after_disconnection() 
                                         return
                                     response = read_lines()
-                                    comport_is_active = comport_is_On(self.comport)
+                                    comport_is_active = interface_is_online(self.comport)
                                     if comport_is_active: 
                                         send_command(bytearray(f"sed -i '/^$/d' {actual_nvme}\n", 'ascii'))
                                         if Commands_file_user:
@@ -11696,16 +11712,16 @@ class Ui_MainWindow(object):
                     self.pushButton_8.setIcon(icon)
                     self.pushButton_8.setIconSize(QSize(30, 30))  # Set icon size
                 #path = 'cd\ncd /run/media/nvme0n1p1/logs/\nls -l\n'
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
                 
                 # Send initial commands to Serial
                 #path = 'cd\ncd /run/media/nvme0n1p1/logs/\nls -l\n'
                 print(current_path)
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
                 command = check_command(current_path)
                 print(f"command: {command}")
 
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
                 if comport_is_active: 
                     if not (browse_file_for_HWUSB):
                         send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command}; (echo END) > /dev/null\n', 'ascii'))
@@ -11874,10 +11890,10 @@ class Ui_MainWindow(object):
                         print(f"back_btn: {true_path}")
                         #########################################################
                         #########################################################
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         command = check_command(f"/{directory}/")
                         print(f"command: {command}")
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             if browse_file_for_HWUSB:
                                 send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {command}; (echo END) > /dev/null\n', 'ascii'))
@@ -11905,8 +11921,8 @@ class Ui_MainWindow(object):
                         current_path = f"{current_path}{selected_folder}/"
                         current_path_1 = check_command(current_path)
                         print(f"current_path: {current_path}")
-                        comport_is_active = comport_is_On(self.comport)
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             if not (browse_file_for_HWUSB):
                                 send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --dir {current_path_1}; (echo END) > /dev/null\n', 'ascii'))
@@ -11971,7 +11987,7 @@ class Ui_MainWindow(object):
                             filename_bin = f'{filename}.bin'
                             if not browse_file_for_HWUSB:
                                 commond = check_command(filename_2)
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 if comport_is_active:
                                     send_command(bytearray(f'chmod +x /home/root/adc4bits/libiio/list_contents.sh; /home/root/adc4bits/libiio/list_contents.sh --mode contents --file {current_path}/{filename_2}; (echo END) > /dev/null\n', 'ascii'))
                                     with open(file_path, 'a') as file:
@@ -12538,7 +12554,7 @@ class Ui_MainWindow(object):
                             ########################################################################################################################
                             directory = current_path
                             command = check_command(directory)
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
                             if comport_is_active: 
                                 send_command(bytearray(f'cd {command}\n', 'ascii'))
                                 if Commands_file_user:
@@ -12551,7 +12567,7 @@ class Ui_MainWindow(object):
                                 msg_box_11.exec()
                                 self.open_after_disconnection()
                                 return
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
                             if comport_is_active: 
                                 send_command(bytearray(f'ls -l\n', 'ascii'))
                                 if Commands_file_user:
@@ -12669,7 +12685,7 @@ class Ui_MainWindow(object):
                                 return
                             ########################################################################################################################
                             directory = current_path
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
                             command = check_command(directory)
                             if comport_is_active: 
                                 send_command(bytearray(f'cd {command}\n', 'ascii'))
@@ -12683,7 +12699,7 @@ class Ui_MainWindow(object):
                                 msg_box_11.exec()
                                 self.open_after_disconnection()
                                 return
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
                             if comport_is_active: 
                                 send_command(bytearray(f'ls -l\n', 'ascii'))
                                 if Commands_file_user:
@@ -12839,7 +12855,7 @@ class Ui_MainWindow(object):
                                 return
                             ########################################################################################################################
                             directory = current_path
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
                             command = check_command(directory)
                             if comport_is_active: 
                                 send_command(bytearray(f'cd {command}\n', 'ascii'))
@@ -12853,7 +12869,7 @@ class Ui_MainWindow(object):
                                 msg_box_11.exec()
                                 self.open_after_disconnection()
                                 return
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
                             if comport_is_active: 
                                 send_command(bytearray(f'ls -l\n', 'ascii'))
                                 if Commands_file_user:
@@ -13032,7 +13048,7 @@ class Ui_MainWindow(object):
                                 self.populate_table()
 
                                 directory = read_selected_file_path
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 command = check_command(directory)
                                 if comport_is_active: 
                                     send_command(bytearray(f'cd {command}\n', 'ascii'))
@@ -13046,7 +13062,7 @@ class Ui_MainWindow(object):
                                     msg_box_11.exec()
                                     self.open_after_disconnection()
                                     return
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 selected_file_actual = check_command(filename_txt)
                                 if comport_is_active: 
                                     send_command(bytearray(f'cat {selected_file_actual}\n', 'ascii'))
@@ -13069,7 +13085,7 @@ class Ui_MainWindow(object):
                                 selected_files_paths.append(f"{current_path}{filename}")
                                 new_lines = f"selected_files: {current_path}{filename}"
                                 #print(new_lines)
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 command = check_command(directory)
                                 if comport_is_active: 
                                     send_command(bytearray(f'cd {command}\n', 'ascii'))
@@ -13083,7 +13099,7 @@ class Ui_MainWindow(object):
                                     msg_box_11.exec()
                                     self.open_after_disconnection()
                                     return
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 
                                 if comport_is_active: 
                                     send_command(bytearray(f'echo "{new_lines}">>{filename_txt}\n', 'ascii'))
@@ -13200,7 +13216,7 @@ class Ui_MainWindow(object):
                                     selected_folder = str(selected_folder).split("(d)  ")[-1].strip()
 
                                     # Execute the rename command
-                                    comport_is_active = comport_is_On(self.comport)
+                                    comport_is_active = interface_is_online(self.comport)
                                     if comport_is_active:
                                         # Use the 'mv' command for renaming
                                         send_command(bytearray(f'mv "{current_path}{selected_folder}" "{current_path}{new_folder_name}"\n', 'ascii'))
@@ -13261,7 +13277,7 @@ class Ui_MainWindow(object):
                                         test_flag_2 = False
                                         
                                         line_to_edit = filename_txt_string_editor(line_to_edit)
-                                        comport_is_active = comport_is_On(self.comport)
+                                        comport_is_active = interface_is_online(self.comport)
 
                                         if comport_is_active:
                                             send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
@@ -13314,7 +13330,7 @@ class Ui_MainWindow(object):
                                         new_folder_name = new_folder_name.split(".bin")[0]
 
                                     # Execute the rename command
-                                    comport_is_active = comport_is_On(self.comport)
+                                    comport_is_active = interface_is_online(self.comport)
                                     
                                     check_selected_folder_2 = str(selected_folder).split(".bin")[0]
                                     if comport_is_active:
@@ -13370,7 +13386,7 @@ class Ui_MainWindow(object):
                                        
                                         line_to_edit = filename_txt_string_editor(line_to_edit)
                                        
-                                        comport_is_active = comport_is_On(self.comport)
+                                        comport_is_active = interface_is_online(self.comport)
 
                                         if comport_is_active:
                                             send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
@@ -13434,7 +13450,7 @@ class Ui_MainWindow(object):
                                         listbox.delete(selected_indices[0])
                                         print(selected_folder)
                                         #print(f"Deleting folder: {selected_folder}")  # Placeholder action
-                                        comport_is_active = comport_is_On(self.comport)
+                                        comport_is_active = interface_is_online(self.comport)
                                         if comport_is_active: 
                                             send_command(bytearray(f'rm "{current_path}{selected_folder[:-4]}"*\n', 'ascii'))
                                             if Commands_file_user:
@@ -13451,7 +13467,7 @@ class Ui_MainWindow(object):
                                     print(line_to_edit)
                                 
                                     line_to_edit = filename_txt_string_editor(line_to_edit)
-                                    comport_is_active = comport_is_On(self.comport)
+                                    comport_is_active = interface_is_online(self.comport)
 
                                     if comport_is_active:
                                         send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
@@ -13493,7 +13509,7 @@ class Ui_MainWindow(object):
                                         folders_available.remove(selected_folder)
                                         listbox.delete(selected_indices[0])
                                         selected_folder = str(selected_folder).split("(d)  ")[1]
-                                        comport_is_active = comport_is_On(self.comport)
+                                        comport_is_active = interface_is_online(self.comport)
                                         if comport_is_active: 
                                             send_command(bytearray(f'rm -r "{current_path}{selected_folder}"\npwd\n', 'ascii'))
                                             if Commands_file_user:
@@ -14079,7 +14095,7 @@ class Ui_MainWindow(object):
                     self.open_after_disconnection() 
                     return"""
                 #######################################################################
-                """comport_is_active = comport_is_On(self.comport)
+                """comport_is_active = interface_is_online(self.comport)
                 if comport_is_active: 
                     send_command(b'\x03')
                     if Commands_file_user:
@@ -14092,7 +14108,7 @@ class Ui_MainWindow(object):
                     msg_box_11.exec()
                     self.open_after_disconnection()
                     return
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
                 if comport_is_active: 
                     send_command(bytearray('clear\n', 'ascii'))
                     if Commands_file_user:
@@ -14120,7 +14136,7 @@ class Ui_MainWindow(object):
                     msg_box_2.exec()
                     self.open_after_disconnection() 
                     return"""
-                """comport_is_active = comport_is_On(self.comport)
+                """comport_is_active = interface_is_online(self.comport)
                 
                 if comport_is_active:   
                     send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
@@ -14135,7 +14151,7 @@ class Ui_MainWindow(object):
                     msg_box_11.exec()
                     self.open_after_disconnection()
                     return
-                comport_is_active = comport_is_On(self.comport)
+                comport_is_active = interface_is_online(self.comport)
 
                 if comport_is_active:               
                     send_command(bytearray(f'cat "{filename_txt}" ; (echo END) > /dev/null\n', 'ascii'))
@@ -14239,7 +14255,7 @@ class Ui_MainWindow(object):
                             line_to_edit = line.split(":-")[0].split(".bin")[0].strip()
                            
                             line_to_edit = filename_txt_string_editor(line_to_edit)
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
 
                             if comport_is_active:
                                 send_command(bytearray(f'cd "{read_selected_file_path}"\n', 'ascii'))
@@ -14276,7 +14292,7 @@ class Ui_MainWindow(object):
                     msg_box_11.setWindowTitle("Info")
                     msg_box_11.setText(f"The file {filename_txt} not found\n\nA new {filename_txt} file is created\n\nDirectory:{directory}")
                     msg_box_11.exec()
-                    comport_is_active = comport_is_On(self.comport)
+                    comport_is_active = interface_is_online(self.comport)
                     
                     if comport_is_active: 
                         send_command(bytearray(f'cd "{directory}"\n', 'ascii'))
@@ -14290,7 +14306,7 @@ class Ui_MainWindow(object):
                         msg_box_11.exec()
                         self.open_after_disconnection()
                         return
-                    comport_is_active = comport_is_On(self.comport)
+                    comport_is_active = interface_is_online(self.comport)
                    
                     if comport_is_active: 
                         send_command(bytearray(f'touch "{filename_txt}"\n', 'ascii'))
@@ -14582,7 +14598,7 @@ class Ui_MainWindow(object):
         if not recording_started:
             global available_memory
             if checked_both_without_HWUSB:
-                comport_2_rtcm = comport_is_On(self.comport_rtcm)
+                comport_2_rtcm = interface_is_onlineRTCM(self.comport_rtcm)
                 if not comport_2_rtcm:
                     msg_box_2 = QMessageBox()
                     msg_box_2.setWindowTitle("Missing Data")
@@ -15016,7 +15032,7 @@ class Ui_MainWindow(object):
                         )
                         #print("the command is ",final_string)
                         if checked_both_without_HWUSB:
-                            comport_2_rtcm = comport_is_On(self.comport_rtcm)
+                            comport_2_rtcm = interface_is_onlineRTCM(self.comport_rtcm)
                             if not comport_2_rtcm:
                                 msg_box_2 = QMessageBox()
                                 msg_box_2.setWindowTitle("Missing Data")
@@ -15059,7 +15075,7 @@ class Ui_MainWindow(object):
                                                         msg_box_11.exec()     
                                                         return
                             
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if HW_USB_in_use:
                             record_folder_path = f"{rtcm_folder_path}{self.file_name}_{current_time}"
                             self.rtcm_record_command(record_folder_path)
@@ -15467,7 +15483,7 @@ class Ui_MainWindow(object):
                             )
                             print("the command is ",final_string)
                             if checked_both_without_HWUSB:
-                                comport_2_rtcm = comport_is_On(self.comport_rtcm)
+                                comport_2_rtcm = interface_is_onlineRTCM(self.comport_rtcm)
                                 if not comport_2_rtcm:
                                     msg_box_2 = QMessageBox()
                                     msg_box_2.setWindowTitle("Missing Data")
@@ -15511,7 +15527,7 @@ class Ui_MainWindow(object):
                                                             return
                             
                             
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
                             if HW_USB_in_use:
                                 record_folder_path = f"{rtcm_folder_path}{self.file_name}_{current_time}"
                                 self.rtcm_record_command(record_folder_path)
@@ -15897,7 +15913,7 @@ class Ui_MainWindow(object):
                             )
                             print("the command is ",final_string)
                             if checked_both_without_HWUSB:
-                                comport_2_rtcm = comport_is_On(self.comport_rtcm)
+                                comport_2_rtcm = interface_is_onlineRTCM(self.comport_rtcm)
                                 if not comport_2_rtcm:
                                     msg_box_2 = QMessageBox()
                                     msg_box_2.setWindowTitle("Missing Data")
@@ -15940,7 +15956,7 @@ class Ui_MainWindow(object):
                                                             msg_box_11.exec()     
                                                             return
                                 
-                            comport_is_active = comport_is_On(self.comport)
+                            comport_is_active = interface_is_online(self.comport)
                             if HW_USB_in_use:
                                 record_folder_path = f"{rtcm_folder_path}{self.file_name}_{current_time}"
                                 self.rtcm_record_command(record_folder_path)
@@ -16116,7 +16132,7 @@ class Ui_MainWindow(object):
                         self.radioButton_Rx_2.setEnabled(True)
                         self.green_light_record.setVisible(True)
                         self.red_light_record.setVisible(True)
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(b'\x03')
                             if Commands_file_user:
@@ -16131,7 +16147,7 @@ class Ui_MainWindow(object):
                             return
                         if checked_both_without_HWUSB or HW_USB_in_use:
                             if (HW_USB_in_use):
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 if comport_is_active: 
                                     send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                                     with open(file_path, 'a') as file:
@@ -16152,7 +16168,7 @@ class Ui_MainWindow(object):
                         start_time = time.time()  # Record start time
                         
                         
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray('clear\n', 'ascii'))
                             if Commands_file_user:
@@ -16190,7 +16206,7 @@ class Ui_MainWindow(object):
                 
                 if checked_both_without_HWUSB or HW_USB_in_use:
                     if HW_USB_in_use:
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
@@ -16252,7 +16268,7 @@ class Ui_MainWindow(object):
                 self.green_light_record.setVisible(False)
                 if checked_both_without_HWUSB or HW_USB_in_use:
                     if HW_USB_in_use:
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
@@ -16274,7 +16290,7 @@ class Ui_MainWindow(object):
                 self.timer.stop()
                 if checked_both_without_HWUSB or HW_USB_in_use:
                     if HW_USB_in_use:
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
@@ -16332,7 +16348,7 @@ class Ui_MainWindow(object):
                 self.green_light_record.setVisible(False)
                 if checked_both_without_HWUSB or HW_USB_in_use:
                     if HW_USB_in_use:
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
@@ -16353,7 +16369,7 @@ class Ui_MainWindow(object):
                 self.timer.stop()
                 if checked_both_without_HWUSB or HW_USB_in_use:
                     if HW_USB_in_use:
-                        comport_is_active = comport_is_On(self.comport)
+                        comport_is_active = interface_is_online(self.comport)
                         if comport_is_active: 
                             send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                             with open(file_path, 'a') as file:
@@ -16407,7 +16423,7 @@ class Ui_MainWindow(object):
                         #print("file count is equal to file count variable")
                         if checked_both_without_HWUSB or HW_USB_in_use:
                             if HW_USB_in_use:
-                                comport_is_active = comport_is_On(self.comport)
+                                comport_is_active = interface_is_online(self.comport)
                                 if comport_is_active: 
                                     send_command(bytearray(f'{disconnect_HW_USB_record_replay}\n', 'ascii'))
                                     with open(file_path, 'a') as file:
@@ -16582,7 +16598,7 @@ class Ui_MainWindow(object):
         #######################################################################
             #print("the command is ",final_string)
         if checked_both_without_HWUSB:
-            comport_2_rtcm = comport_is_On(self.comport_rtcm)
+            comport_2_rtcm = interface_is_onlineRTCM(self.comport_rtcm)
             if not comport_2_rtcm:
                 msg_box_2 = QMessageBox()
                 msg_box_2.setWindowTitle("Missing Data")
@@ -16626,7 +16642,7 @@ class Ui_MainWindow(object):
                                         msg_box_11.exec()     
                                         return
                                 
-        comport_is_active = comport_is_On(self.comport)
+        comport_is_active = interface_is_online(self.comport)
         if HW_USB_in_use:
             record_folder_path = f"{rtcm_folder_path}{self.file_name}_{current_time}"
             self.rtcm_record_command(record_folder_path)
@@ -16857,13 +16873,13 @@ class MainWindowWithCloseEvent(QtWidgets.QMainWindow):
         global ser, root, check_comport
         check_comport = False
         if not ser == None:
-                comport_is_active = comport_is_On(active_comport_used)
+                comport_is_active = interface_is_online(active_comport_used)
                 if comport_is_active and comport_connected: 
                     send_command(bytearray(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n', 'ascii'))
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n')
-                comport_is_active = comport_is_On(active_comport_used)
+                comport_is_active = interface_is_online(active_comport_used)
                 if comport_is_active and comport_connected: 
                     send_command(b'\x03')
                     if Commands_file_user:
