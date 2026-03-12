@@ -21,6 +21,11 @@ from serial_interface_utils import (
     is_active_comport_online,
     monitor_serial_disconnect_status,
 )
+from interface_dependent_functions import (
+    send_command_interface_handle,
+    read_lines_interface_handle,
+    read_line_interface_handle,
+)
 
 from PIL import Image, ImageTk
 from pyubx2 import UBXReader
@@ -201,22 +206,13 @@ comport_2_checked = False
 main_func_called = False
 ###############################################################################
 def send_command(command):
-    if interface_in_use == 0:
-        return send_serial_command(ser, command)
-    else:
-        print("Wifi")
+    send_command_interface_handle(command, ser, interface_in_use)
 
 def read_lines():
-    if interface_in_use == 0:
-        return read_serial_lines(ser)
-    else:
-        print("Wifi")
+    read_lines_interface_handle(ser, interface_in_use)
 
 def read_line():
-    if interface_in_use == 0:
-        return read_serial_line(ser)
-    else:
-        print("Wifi")
+    read_line_interface_handle(ser, interface_in_use)
 ####################### Get the Current Date and Time ##########################
 def get_current_datetime():
     timestamp = time.time()
@@ -8906,7 +8902,8 @@ class Ui_MainWindow(object):
                 if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   chmod +x /home/root/adc4bits/libiio/command_set01.sh ; /home/root/adc4bits/libiio/command_set01.sh ; (echo END) > /dev/null\n')
-                lines = self.read_Response_END() 
+                lines = self.read_Response_END()
+                print(lines) 
                 try:
                     decoded_lines = [line.decode() for line in lines]
                 except:

@@ -2,7 +2,6 @@ import serial
 import time
 from serial.tools import list_ports
 
-
 def list_hardware_com_ports():
     ports = list_ports.comports()
     hardware_ports = []
@@ -11,14 +10,12 @@ def list_hardware_com_ports():
             hardware_ports.append(port.device)
     return hardware_ports
 
-
 def is_active_comport_online(active_comport):
     ports = list_hardware_com_ports()
     if active_comport in ports:
         return True
     else:
         return False
-
 
 def monitor_serial_disconnect_status(
     is_running,
@@ -43,11 +40,9 @@ def monitor_serial_disconnect_status(
                 set_disconnected_status(True)
             time.sleep(sleep_interval)
 
-
 def disconnect_interface(serial_connection):
     if serial_connection is not None and serial_connection.isOpen():
         serial_connection.close()
-
 
 def connect_to_interface(serial_connection, comport, baudrate, timeout_value):
     disconnect_interface(serial_connection)
@@ -56,40 +51,37 @@ def connect_to_interface(serial_connection, comport, baudrate, timeout_value):
     except serial.SerialException:
         return None
 
-
-def send_serial_command(interface_in_use, serial_connection, command):
-    if interface_in_use == 0 and serial_connection is not None:
+def send_serial_command(serial_connection, command):
+    if serial_connection is not None:
         return serial_connection.write(command)
     return None
-
 
 def read_serial_lines(serial_connection):
     if serial_connection is None:
         return []
     return serial_connection.readlines(serial_connection.in_waiting)
 
-
 def read_serial_line(serial_connection):
     if serial_connection is None:
         return []
     return serial_connection.readlines(1)
-
 
 def read_serial_decoded_line(serial_connection):
     if serial_connection is None:
         return ""
     return serial_connection.readline().decode(errors='ignore')
 
-
 def read_serial_response_end(serial_connection, file_path_to_read_response, current_datetime_func):
     if serial_connection is None:
         return
-
+    print("Reading response until END...")
     response = serial_connection.read_until(b'END\r\n')
+    response = response.replace(b'\r',b'')
+    response = response.replace(b'ENND',b'END')
     print(f"res2:{response}\n\n\n")
     if b'END' not in response:
         return
-
+    print("Reading response until #...")
     res2 = serial_connection.read_until(b'#')
     print(f"res3:{res2}\n\n")
     lines = response.splitlines(keepends=True) + [res2]
