@@ -7,6 +7,8 @@ import datetime
 import threading
 #from datetime import datetime
 import serial
+import serial.tools.list_ports
+from serial.tools import list_ports
 from serial_interface_utils import (
     connect_to_interface,
     disconnect_interface,
@@ -353,7 +355,11 @@ def interface_is_online(active_comport):
         print("wifi")
     
 def interface_is_onlineRTCM(active_comport):
-    return is_active_comport_online(active_comport)
+    ports = list_hardware_com_ports()
+    if active_comport in ports:
+        return True
+    else:
+        return False
 
 def comport_is_On_record_replay(active_comport):
     global disconnected_comport_while_recording_replaying
@@ -5766,15 +5772,19 @@ class Ui_MainWindow(object):
                 msg_box_2.exec()
             return False
 
+    def interface_check(self):
+        global interface_in_use
+        if self.comport == WIFI_INTERFACE_OPTION:
+            interface_in_use = 1
+        else:
+            interface_in_use = 0
+
     def open_usb_info(self):
         global flag_raised, ser, usb_button_flag, newoutput, interface_in_use
         self.comport = self.comboBox_comport.currentText()
         self.baudrate = self.comboBox_baudrate.currentText()
         print(self.comport)
-        if self.comport == WIFI_INTERFACE_OPTION:
-            interface_in_use = 1
-        else:
-            interface_in_use = 0
+        self.interface_check()
         if not self.ensure_interface_connection(timeout_time):
             return
         send_command(b'\x03')
@@ -8819,10 +8829,7 @@ class Ui_MainWindow(object):
             only_rtcm = False
             active_com_port_used_for_rtcm = self.comport_rtcm
         selected_submit = True
-        if self.comport == WIFI_INTERFACE_OPTION:
-            interface_in_use = 1
-        else:
-            interface_in_use = 0
+        self.interface_check()
         if selected_submit:
             ##############################################################
             if not self.ensure_interface_connection(timeout_time):
