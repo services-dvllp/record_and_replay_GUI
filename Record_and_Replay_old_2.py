@@ -47,7 +47,9 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtCore import Qt
 
-
+ssh_username = "root"
+ssh_fixed_url = f"{ssh_username}@192.168.4.1"
+ssh_password = "root"
 ########## User and Developer Code ############
 Commands_file_user = True
 browse_folder_for_HWUSB = False
@@ -125,7 +127,8 @@ device_id = ""
 bus_no = ""
 log_file_size = 1000000 #1MB
 satellite_clicks = 5 #satellite clicks to move to developer mode
-WIFI_INTERFACE_OPTION = "WiFi Interface"
+WIFI_INTERFACE_OPTION = "Router WiFi"
+WIFI_INTERFACE_OPTION_2 = "Board WiFi"
 ############ Flags ####################
 center_frequency_flag = False
 center_frequency_flag_2 = False
@@ -1365,6 +1368,7 @@ class Ui_MainWindow(object):
             self.comboBox_comport.clear()
             self.comboBox_comport.addItem("Select Port")
             self.comboBox_comport.addItem(WIFI_INTERFACE_OPTION)
+            self.comboBox_comport.addItem(WIFI_INTERFACE_OPTION_2)
             non_rtcm_ports = True
             for port in hardware_ports:
                 if port == current_port:
@@ -2035,6 +2039,7 @@ class Ui_MainWindow(object):
         if not non_rtcm_ports:
             self.comboBox_comport.addItem("Select Port") 
             self.comboBox_comport.addItem(WIFI_INTERFACE_OPTION) 
+            self.comboBox_comport.addItem(WIFI_INTERFACE_OPTION_2)
         
         self.comboBox_comport_rtcm.setEnabled(False)
         self.comboBox_comport_rtcm.showPopup = self.comboBox_comport_rtcm_popup
@@ -5748,25 +5753,41 @@ class Ui_MainWindow(object):
         ensure_interface_disconnection_handle(ser, interface_in_use)
 
     def ensure_interface_connection(self, timeout_value=timeout_time, show_disconnection_dialog=False, destroy_root=False):
-        global ser, root
-        result, ser = ensure_interface_connection_handle(
-            ser=ser,
-            comport=self.comport,
-            baudrate=self.baudrate,
-            timeout_value=timeout_value,
-            interface_in_use=interface_in_use,
-            show_disconnection_dialog=show_disconnection_dialog,
-            destroy_root=destroy_root,
-            message_box_factory=QMessageBox,
-            open_after_disconnection=self.open_after_disconnection,
-            destroy_root_fn=lambda: root.destroy(),
-            warning_icon=QMessageBox.Icon.Warning,
-        )
-        return result
+        global ser, root, ssh_url, ssh_password, interface_in_use
+        if interface_in_use == 0:
+            ser = connect_to_interface(ser, self.comport, self.baudrate, timeout_value)
+            if ser is not None:
+                return True
+            if show_disconnection_dialog:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setWindowTitle("Warning")
+                msg.setText("COM port got disconnected!")
+                msg.exec()
+                if destroy_root:
+                    root.destroy()
+                self.open_after_disconnection()
+            else:
+                msg_box_2 = QMessageBox()
+                msg_box_2.setWindowTitle("Error!")
+                msg_box_2.setText("You cannot open this COM Port!")
+                msg_box_2.exec()
+            return False
+        else:
+            if self.comport == WIFI_INTERFACE_OPTION:
+                print("Router WiFi")
+                ssh_url = ssh_fixed_url
+                ssh_password = ssh_password
+            elif self.comport == WIFI_INTERFACE_OPTION_2:
+                print("Board WiFi")
+                ssh_url = f"{ssh_username}@{self.lineEdit_hostname.text().strip()}.local"
+                ssh_password = ssh_password
+            else:
+                print("Unknown WiFi interface")     
 
     def interface_check(self):
         global interface_in_use
-        interface_in_use = interface_check_handle(self.comport, WIFI_INTERFACE_OPTION)
+        interface_in_use = interface_check_handle(self.comport, WIFI_INTERFACE_OPTION, WIFI_INTERFACE_OPTION_2)
 
     def open_usb_info(self):
         global flag_raised, ser, usb_button_flag, newoutput, interface_in_use

@@ -45,7 +45,6 @@ def ensure_interface_disconnection_handle(ser, interface_in_use):
     else:
         print("wifi")
 
-
 def ensure_interface_connection_handle(
     ser,
     comport,
@@ -82,8 +81,15 @@ def ensure_interface_connection_handle(
         print("wifi")
 
 
-def interface_check_handle(comport, wifi_interface_option):
-    if comport == wifi_interface_option:
+def interface_check_handle(comport, wifi_interface_option, wifi_interface_option_2):
+    global board_wifi
+    if comport == wifi_interface_option or comport == wifi_interface_option_2:
+        if comport == wifi_interface_option:
+            print("Router WiFi")
+            board_wifi = False
+        elif comport == wifi_interface_option_2:
+            print("Board WiFi")
+            board_wifi = True
         return 1
     else:
         return 0
