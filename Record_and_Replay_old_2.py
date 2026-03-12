@@ -190,14 +190,26 @@ comport_2_checked = False
 main_func_called = False
 ###############################################################################
 def send_command(command):
-    return send_serial_command(interface_in_use, ser, command)
+    if interface_in_use == 0:
+        return send_serial_command(ser, command)
+    else:
+        print("Wifi")
 
+def read_lines():
+    if interface_in_use == 0:
+        if ser is None:
+            return []
+        return ser.readlines(ser.in_waiting)
+    else:
+        print("Wifi")
 
-def read_serial_lines():
-    if ser is None:
-        return []
-    return ser.readlines(ser.in_waiting)
-
+def read_line():
+    if interface_in_use == 0:
+        if ser is None:
+            return []
+        return ser.readlines(1)
+    else:
+        print("Wifi")
 ####################### Get the Current Date and Time ##########################
 def get_current_datetime():
     timestamp = time.time()
@@ -531,7 +543,7 @@ def get_memory_available(fs_system):
     print(fs_system)
     global ser
     ########################################################
-    bss = read_serial_lines()
+    bss = read_lines()
     #########################################################
     #########################################################
     send_command(bytearray('df\n','ascii'))
@@ -539,7 +551,7 @@ def get_memory_available(fs_system):
         with open(file_path, 'a') as file:
             file.write(f'{get_current_datetime()}   df\n')
     # time.sleep(1) 
-    bs = read_serial_lines()
+    bs = read_lines()
     print(bs)
     if Commands_file_user:
                             with open(file_path_to_read_response, 'a') as file:
@@ -1061,7 +1073,7 @@ class Ui_MainWindow(object):
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f'\n{get_current_datetime()}   [ -f "{file_}" ] && echo "File exists." || echo "File does not exist."\n')
-                            lines = read_serial_lines()
+                            lines = read_lines()
                             print(lines)
                             decoded_lines = [line.decode() for line in lines]
                             print(decoded_lines)
@@ -1126,7 +1138,7 @@ class Ui_MainWindow(object):
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f'{get_current_datetime()}   cd {command}\n')
-                            lines = read_serial_lines()
+                            lines = read_lines()
                         else:
                             deleting_on_progress = False
                             self.pushButton_browse_config.setEnabled(True)
@@ -4416,7 +4428,7 @@ class Ui_MainWindow(object):
             return
 
         main_func_called = False
-        bs = read_serial_lines()
+        bs = read_lines()
         if not comport_is_On(self.comport):
             return
 
@@ -6385,7 +6397,7 @@ class Ui_MainWindow(object):
                 self.pushButton_refresh_config.setIcon(icon)
                 self.pushButton_refresh_config.setIconSize(QSize(30, 30))  # Set icon size"""
 
-                lines = read_serial_lines()
+                lines = read_lines()
                 comport_is_active = comport_is_On(self.comport)
          
                 if comport_is_active:   
@@ -6393,7 +6405,7 @@ class Ui_MainWindow(object):
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
-                    lines = read_serial_lines()
+                    lines = read_lines()
                 else:
                     msg_box_11 = QMessageBox()
                     msg_box_11.setWindowTitle("Error!")
@@ -6578,7 +6590,7 @@ class Ui_MainWindow(object):
                         msg_box_11.exec()
                         self.open_after_disconnection()
                         return
-                    read_serial_lines()
+                    read_lines()
                     self.variable_names = []
         
                 self.populate_table()
@@ -6905,7 +6917,7 @@ class Ui_MainWindow(object):
                             if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                                     file.write(f'\n{get_current_datetime()}   clear\n')
-                            bs = read_serial_lines()
+                            bs = read_lines()
                         else:
                             msg_box_11 = QMessageBox()
                             msg_box_11.setWindowTitle("Error!")
@@ -8284,7 +8296,7 @@ class Ui_MainWindow(object):
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f"\n{get_current_datetime()}   {final_string_replay}")
-                                lines = ser.readlines(1)
+                                lines = read_line()
                                 #print(lines)
                                 decoded_lines = [line.decode('UTF-8') for line in lines]
                                 print("hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
@@ -8626,7 +8638,7 @@ class Ui_MainWindow(object):
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f"\n{get_current_datetime()}   {final_string_replay}")
-                                lines = ser.readlines(1)
+                                lines = read_line()
                                 #print(lines)
                                 decoded_lines = [line.decode('UTF-8') for line in lines]
                             else:
@@ -8724,17 +8736,20 @@ class Ui_MainWindow(object):
             return
         
     def read_Response_END(self):
-        response = ser.read_until(b'END\r\n')
-        print(f"res2:{response}\n\n\n")
-        if b'END' not in response:
-            return
-        res2 = ser.read_until(b'#')
-        print(f"res3:{res2}\n\n")
-        lines = response.splitlines(keepends=True) + [res2]
-        with open(file_path_to_read_response, 'a') as file:
-            #file.write(f'{get_current_datetime()} :Response after ls -l')
-            file.write(f'\n{get_current_datetime()}   {lines}\n\n')
-        return lines
+        if interface_in_use == 0:
+            response = ser.read_until(b'END\r\n')
+            print(f"res2:{response}\n\n\n")
+            if b'END' not in response:
+                return
+            res2 = ser.read_until(b'#')
+            print(f"res3:{res2}\n\n")
+            lines = response.splitlines(keepends=True) + [res2]
+            with open(file_path_to_read_response, 'a') as file:
+                #file.write(f'{get_current_datetime()} :Response after ls -l')
+                file.write(f'\n{get_current_datetime()}   {lines}\n\n')
+            return lines
+        else:
+            print("Wifi")
 
     def connectivity_done(self):
         print(self.reference_frequency)
@@ -10375,7 +10390,7 @@ class Ui_MainWindow(object):
                                     return
                                 ########################################################################
                             ########################################################################
-                                lines = read_serial_lines()
+                                lines = read_lines()
                                 ###################################################################################
                                 if comport_is_active:
                                         # Use the 'mv' command for renaming
@@ -10612,7 +10627,7 @@ class Ui_MainWindow(object):
                 global breakloop, download
                 breakloop = False
                 download = "0%"
-                lines = read_serial_lines()
+                lines = read_lines()
                 decoded_lines = [line.decode() for line in lines]
                 for line in decoded_lines:
                     if "[" and "]" in line:
@@ -10694,7 +10709,7 @@ class Ui_MainWindow(object):
                     # GUI Setup
                     while(True):
                         testcount += 1
-                        lines = read_serial_lines()
+                        lines = read_lines()
                         #print(lines)
                         decoded_lines = [line.decode() for line in lines]
                         for line in decoded_lines:
@@ -10818,7 +10833,7 @@ class Ui_MainWindow(object):
             if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cd {command}\n')
-            lines = read_serial_lines()
+            lines = read_lines()
         else:
             msg_box_11 = QMessageBox()
             msg_box_11.setWindowTitle("Error!")
@@ -10835,7 +10850,7 @@ class Ui_MainWindow(object):
             if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cat {actual_nvme}\n')
-            lines = read_serial_lines()
+            lines = read_lines()
             print(lines)
         else:
             msg_box_11 = QMessageBox()
@@ -10924,7 +10939,7 @@ class Ui_MainWindow(object):
                             if Commands_file_user:
                                 with open(file_path, 'a') as file:
                                     file.write(f"\n{get_current_datetime()}   echo '{new_lines}'>>{actual_nvme}\n")
-                            response = read_serial_lines()
+                            response = read_lines()
                         else:
                             msg_box_11 = QMessageBox()
                             msg_box_11.setWindowTitle("Error!")
@@ -10982,7 +10997,7 @@ class Ui_MainWindow(object):
                             msg_box_11.exec()
                             self.open_after_disconnection()
                             return
-                    bs = read_serial_lines()
+                    bs = read_lines()
                     print(bs)
                     ###############################################################################################
                     comport_is_active = comport_is_On(self.comport)
@@ -10998,7 +11013,7 @@ class Ui_MainWindow(object):
                             msg_box_11.exec()
                             self.open_after_disconnection()
                             return
-                    bs = read_serial_lines()
+                    bs = read_lines()
                     print(bs)
                     ################################################################################################
                     developer_tx_rx_content = f"\nDRx: {developer_executable_rx}\nDTx: {developer_executable_tx}"
@@ -11015,7 +11030,7 @@ class Ui_MainWindow(object):
                             msg_box_11.exec()
                             self.open_after_disconnection()
                             return
-                    bs = read_serial_lines()
+                    bs = read_lines()
                     print(bs)
                     msg_box_11 = QMessageBox()
                     msg_box_11.setWindowTitle("Info")
@@ -11213,7 +11228,7 @@ class Ui_MainWindow(object):
             if Commands_file_user:
                 with open(file_path, 'a') as file:
                     file.write(f'\n{get_current_datetime()}   cd {command}\n')
-            lines = read_serial_lines()
+            lines = read_lines()
         else:
             return
         comport_is_active = comport_is_On(self.comport)
@@ -11222,7 +11237,7 @@ class Ui_MainWindow(object):
             if Commands_file_user:
                 with open(file_path, 'a') as file:
                     file.write(f'\n{get_current_datetime()}   cat {actual_nvme}\n')
-            lines = read_serial_lines()
+            lines = read_lines()
         else:
             return
         
@@ -11344,7 +11359,7 @@ class Ui_MainWindow(object):
                 if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f'\n{get_current_datetime()}   cd {command}\n')
-                lines = read_serial_lines()
+                lines = read_lines()
             #print(lines)
             else:
                 msg_box_11 = QMessageBox()
@@ -11359,7 +11374,7 @@ class Ui_MainWindow(object):
                 if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f'\n{get_current_datetime()}   cat {actual_nvme}\n')
-                lines = read_serial_lines()
+                lines = read_lines()
                 print(lines)
             else:
                 msg_box_11 = QMessageBox()
@@ -11447,14 +11462,14 @@ class Ui_MainWindow(object):
                                         msg_box_11.exec()
                                         self.open_after_disconnection() 
                                         return
-                                    response = read_serial_lines()
+                                    response = read_lines()
                                     comport_is_active = comport_is_On(self.comport)
                                     if comport_is_active: 
                                         send_command(bytearray(f"sed -i '/^$/d' {actual_nvme}\n", 'ascii'))
                                         if Commands_file_user:
                                             with open(file_path, 'a') as file:
                                                 file.write(f"\n{get_current_datetime()}   sed -i '/^$/d' {actual_nvme}\n")
-                                        response = read_serial_lines()
+                                        response = read_lines()
                                         print(f"response: {response}")
                                     else:
                                         msg_box_11 = QMessageBox()
@@ -11838,7 +11853,7 @@ class Ui_MainWindow(object):
                     #if dirct is None:
                         #messagebox.showwarning("Error!", "Response not received within the timeout.\nPlease retry / check hardware connection!")
                         #return  # Stop execution
-                    #dirct = read_serial_lines()
+                    #dirct = read_lines()
                     #decoded_lines = [line.decode('ascii').strip() for line in dirct]
                 
                     if back_btn_clicked:
@@ -12537,7 +12552,7 @@ class Ui_MainWindow(object):
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   ls -l\n')
-                                response_1 = read_serial_lines()
+                                response_1 = read_lines()
                                 decoded_lines_1 = [line.decode() for line in response_1]
                                 print(decoded_lines_1)
                             else:
@@ -12676,7 +12691,7 @@ class Ui_MainWindow(object):
                                 msg_box_11.exec()
                                 self.open_after_disconnection()
                                 return
-                            response_1 = read_serial_lines()
+                            response_1 = read_lines()
                             decoded_lines_1 = [line.decode() for line in response_1]
                             for line in decoded_lines_1:
                                 if filename_bin in line:
@@ -12846,7 +12861,7 @@ class Ui_MainWindow(object):
                                 msg_box_11.exec()
                                 self.open_after_disconnection()
                                 return
-                            response_1 = read_serial_lines()
+                            response_1 = read_lines()
                             decoded_lines_1 = [line.decode() for line in response_1]
                             for line in decoded_lines_1:
                                 if filename_bin in line:
@@ -13040,7 +13055,7 @@ class Ui_MainWindow(object):
                                     msg_box_11.exec()
                                     self.open_after_disconnection()
                                     return
-                                lines = read_serial_lines()
+                                lines = read_lines()
                                 print(lines)
                                 decoded_lines = [line.decode() for line in lines]
                                 for line in decoded_lines:
@@ -13200,7 +13215,7 @@ class Ui_MainWindow(object):
                                     if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True, destroy_root=True):
                                         return
                                     ########################################################################
-                                    lines = read_serial_lines()
+                                    lines = read_lines()
                                     ###################################################################################
                                     
                                     if comport_is_active:
@@ -13313,7 +13328,7 @@ class Ui_MainWindow(object):
                                     if not self.ensure_interface_connection(timeout_time, show_disconnection_dialog=True, destroy_root=True):
                                         return
                                     ########################################################################
-                                    lines = read_serial_lines()
+                                    lines = read_lines()
                                     ###################################################################################
                                     
                                     if comport_is_active:
@@ -13425,7 +13440,7 @@ class Ui_MainWindow(object):
                                             root.destroy()
                                             self.open_after_disconnection()
                                             return
-                                        lines = read_serial_lines()
+                                        lines = read_lines()
                                         
                                     line_to_edit = current_path+str(selected_folder).split(".bin")[0]
                                     print(line_to_edit)
@@ -13485,7 +13500,7 @@ class Ui_MainWindow(object):
                                              root.destroy()
                                              self.open_after_disconnection()
                                              return
-                                        lines = read_serial_lines()
+                                        lines = read_lines()
                                     self.check_selected_files_availability()
                         else:
                             messagebox.showwarning("Select a file", "No file is selected to delete!")
@@ -14078,7 +14093,7 @@ class Ui_MainWindow(object):
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                                         file.write(f'\n{get_current_datetime()}   clear\n')
-                    read_serial_lines()
+                    read_lines()
                 else:
                     msg_box_11 = QMessageBox()
                     msg_box_11.setWindowTitle("Error!")
@@ -14092,7 +14107,7 @@ class Ui_MainWindow(object):
                     self.ensure_interface_disconnection()
                 try:
                     ser = serial.Serial(self.comport, self.baudrate, timeout=timeout_time)
-                    read_serial_lines()
+                    read_lines()
                 except serial.SerialException as e:
                     msg_box_2 = QMessageBox()
                     msg_box_2.setWindowTitle("Error!")
@@ -14107,7 +14122,7 @@ class Ui_MainWindow(object):
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cd "{read_selected_file_path}"\n')
-                    lines = read_serial_lines()
+                    lines = read_lines()
                 else:
                     msg_box_11 = QMessageBox()
                     msg_box_11.setWindowTitle("Error!")
@@ -14122,7 +14137,7 @@ class Ui_MainWindow(object):
                     if Commands_file_user:
                         with open(file_path, 'a') as file:
                             file.write(f'\n{get_current_datetime()}   cat "{filename_txt}" ; (echo END) > /dev/null\n')
-                    #lines = read_serial_lines()
+                    #lines = read_lines()
                     
                     lines = self.read_Response_END()  # Call the function
                     if lines is None:
@@ -14284,13 +14299,13 @@ class Ui_MainWindow(object):
                         msg_box_11.exec()
                         self.open_after_disconnection()
                         return
-                    read_serial_lines()
+                    read_lines()
                     self.variable_names = []"""
                 ###############################################################################################
                 #self.variable_names.append(line)
                 #print(file_dictionary)
                 #print(self.variable_names)
-                #read_serial_lines()
+                #read_lines()
                 self.populate_table()
                 #####################################################################################
                 config_button = True
@@ -15083,7 +15098,7 @@ class Ui_MainWindow(object):
                             self.open_after_disconnection()
                             return
                       
-                        lines = read_serial_lines()
+                        lines = read_lines()
                         print(f'12{lines}')
                         decoded_lines = [line.decode() for line in lines]
                         print(decoded_lines)
@@ -15503,7 +15518,7 @@ class Ui_MainWindow(object):
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f"\n{get_current_datetime()}   {final_string}")
-                                lines = read_serial_lines()
+                                lines = read_lines()
                                 decoded_lines = [line.decode() for line in lines]
                                 
                             else:
@@ -15932,7 +15947,7 @@ class Ui_MainWindow(object):
                                 if Commands_file_user:
                                     with open(file_path, 'a') as file:
                                         file.write(f"\n{get_current_datetime()}   {final_string}")
-                                lines = read_serial_lines()
+                                lines = read_lines()
                                 decoded_lines = [line.decode() for line in lines]
                             else:
                                 self.comboBox.setEnabled(True)
@@ -16145,7 +16160,7 @@ class Ui_MainWindow(object):
                             msg_box_11.exec()
                             self.open_after_disconnection()
                             return
-                        bs = read_serial_lines()
+                        bs = read_lines()
                         ########################################################################
                         #self.label_current_file.setText(f"{file_count+1}")
                         #self.label_current_file.setStyleSheet("color: red;") 
@@ -16344,10 +16359,10 @@ class Ui_MainWindow(object):
                 file_count += 1
                 count_one = 0
                 #send_command(b'\x03')  # Send Ctrl+C to stop the recording
-                bs = read_serial_lines()
+                bs = read_lines()
                 ########################################################################
                 #print("yes")
-                bs = read_serial_lines()
+                bs = read_lines()
                 ########################################################################
                 #print("yes2.5")   
                 #print(current_time)
@@ -16476,7 +16491,7 @@ class Ui_MainWindow(object):
                     #flag_raised_for_stop_Recording = True
                     break
         send_command(bytearray('clear\n', 'ascii'))
-        clear_lines = read_serial_lines()
+        clear_lines = read_lines()
         print("clear lines are ", clear_lines)
         current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         duration = time_to_seconds(self.duration_value)
@@ -16618,7 +16633,7 @@ class Ui_MainWindow(object):
             if Commands_file_user:
                     with open(file_path, 'a') as file:
                         file.write(f"\n{get_current_datetime()}   {final_string}")
-            lines = read_serial_lines()
+            lines = read_lines()
             decoded_lines = [line.decode() for line in lines]
         else:
             self.timer.stop()
