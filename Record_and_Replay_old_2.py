@@ -9,7 +9,15 @@ import threading
 import serial
 import serial.tools.list_ports
 from serial.tools import list_ports
-from serial_interface_utils import connect_to_interface, disconnect_interface, send_serial_command
+from serial_interface_utils import (
+    connect_to_interface,
+    disconnect_interface,
+    send_serial_command,
+    read_serial_line,
+    read_serial_lines,
+    read_serial_decoded_line,
+    read_serial_response_end,
+)
 
 from PIL import Image, ImageTk
 from pyubx2 import UBXReader
@@ -197,17 +205,13 @@ def send_command(command):
 
 def read_lines():
     if interface_in_use == 0:
-        if ser is None:
-            return []
-        return ser.readlines(ser.in_waiting)
+        return read_serial_lines(ser)
     else:
         print("Wifi")
 
 def read_line():
     if interface_in_use == 0:
-        if ser is None:
-            return []
-        return ser.readlines(1)
+        return read_serial_line(ser)
     else:
         print("Wifi")
 ####################### Get the Current Date and Time ##########################
@@ -7833,7 +7837,7 @@ class Ui_MainWindow(object):
     def read_decoded_line(self):
         if interface_in_use == 0:
             global ser
-            return ser.readline().decode(errors='ignore')
+            return read_serial_decoded_line(ser)
         else:
             print("Wifi")
 		
@@ -8744,17 +8748,11 @@ class Ui_MainWindow(object):
         
     def read_Response_END(self):
         if interface_in_use == 0:
-            response = ser.read_until(b'END\r\n')
-            print(f"res2:{response}\n\n\n")
-            if b'END' not in response:
-                return
-            res2 = ser.read_until(b'#')
-            print(f"res3:{res2}\n\n")
-            lines = response.splitlines(keepends=True) + [res2]
-            with open(file_path_to_read_response, 'a') as file:
-                #file.write(f'{get_current_datetime()} :Response after ls -l')
-                file.write(f'\n{get_current_datetime()}   {lines}\n\n')
-            return lines
+            return read_serial_response_end(
+                ser,
+                file_path_to_read_response,
+                get_current_datetime,
+            )
         else:
             print("Wifi")
 

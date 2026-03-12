@@ -18,3 +18,40 @@ def send_serial_command(interface_in_use, serial_connection, command):
     if interface_in_use == 0 and serial_connection is not None:
         return serial_connection.write(command)
     return None
+
+
+def read_serial_lines(serial_connection):
+    if serial_connection is None:
+        return []
+    return serial_connection.readlines(serial_connection.in_waiting)
+
+
+def read_serial_line(serial_connection):
+    if serial_connection is None:
+        return []
+    return serial_connection.readlines(1)
+
+
+def read_serial_decoded_line(serial_connection):
+    if serial_connection is None:
+        return ""
+    return serial_connection.readline().decode(errors='ignore')
+
+
+def read_serial_response_end(serial_connection, file_path_to_read_response, current_datetime_func):
+    if serial_connection is None:
+        return
+
+    response = serial_connection.read_until(b'END\r\n')
+    print(f"res2:{response}\n\n\n")
+    if b'END' not in response:
+        return
+
+    res2 = serial_connection.read_until(b'#')
+    print(f"res3:{res2}\n\n")
+    lines = response.splitlines(keepends=True) + [res2]
+
+    with open(file_path_to_read_response, 'a') as file:
+        file.write(f'\n{current_datetime_func()}   {lines}\n\n')
+
+    return lines
