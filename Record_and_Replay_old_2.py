@@ -25,6 +25,13 @@ from interface_dependent_functions import (
     send_command_interface_handle,
     read_lines_interface_handle,
     read_line_interface_handle,
+    interface_is_online as interface_is_online_handle,
+    worker_run_interface_handle,
+    ensure_interface_disconnection_handle,
+    ensure_interface_connection_handle,
+    interface_check_handle,
+    read_decoded_line_interface_handle,
+    read_response_end_interface_handle,
 )
 
 from PIL import Image, ImageTk
@@ -345,10 +352,7 @@ if Commands_file_user:
 
 ##################################################################################
 def interface_is_online(active_comport):
-    if interface_in_use == 0:
-        return is_active_comport_online(active_comport)
-    else:
-        print("wifi")
+    return interface_is_online_handle(active_comport, interface_in_use)
     
 def interface_is_onlineRTCM(active_comport):
     ports = list_hardware_com_ports()
@@ -698,18 +702,16 @@ class Worker(QThread):
     def run(self):
         global disconnected_comport_while_recording_replaying
         # Infinite loop controlled by `self.running`
-        if interface_in_use == 0:
-            monitor_serial_disconnect_status(
-                is_running=lambda: self.running,
-                checked_both_without_hwusb=checked_both_without_HWUSB,
-                active_comport_used=active_comport_used,
-                active_com_port_used_for_rtcm=active_com_port_used_for_rtcm,
-                set_disconnected_status=lambda value: globals().__setitem__(
-                    "disconnected_comport_while_recording_replaying", value
-                ),
-            )
-        else:
-            print("wifi")
+        worker_run_interface_handle(
+            interface_in_use=interface_in_use,
+            is_running=lambda: self.running,
+            checked_both_without_hwusb=checked_both_without_HWUSB,
+            active_comport_used=active_comport_used,
+            active_com_port_used_for_rtcm=active_com_port_used_for_rtcm,
+            set_disconnected_status=lambda value: globals().__setitem__(
+                "disconnected_comport_while_recording_replaying", value
+            ),
+        )
     def stop(self):
         self.running = False  # Set flag to stop the loop
 #############################################################################################################
@@ -5743,41 +5745,28 @@ class Ui_MainWindow(object):
     ######################################################################################################################
     def ensure_interface_disconnection(self):
         global ser, interface_in_use
-        if interface_in_use == 0:
-            disconnect_interface(ser)
-        else:
-            print("wifi")
+        ensure_interface_disconnection_handle(ser, interface_in_use)
 
     def ensure_interface_connection(self, timeout_value=timeout_time, show_disconnection_dialog=False, destroy_root=False):
         global ser, root
-        if interface_in_use == 0:
-            ser = connect_to_interface(ser, self.comport, self.baudrate, timeout_value)
-            if ser is not None:
-                return True
-            if show_disconnection_dialog:
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Icon.Warning)
-                msg.setWindowTitle("Warning")
-                msg.setText("COM port got disconnected!")
-                msg.exec()
-                if destroy_root:
-                    root.destroy()
-                self.open_after_disconnection()
-            else:
-                msg_box_2 = QMessageBox()
-                msg_box_2.setWindowTitle("Error!")
-                msg_box_2.setText("You cannot open this COM Port!")
-                msg_box_2.exec()
-            return False
-        else:
-            print("wifi")
+        result, ser = ensure_interface_connection_handle(
+            ser=ser,
+            comport=self.comport,
+            baudrate=self.baudrate,
+            timeout_value=timeout_value,
+            interface_in_use=interface_in_use,
+            show_disconnection_dialog=show_disconnection_dialog,
+            destroy_root=destroy_root,
+            message_box_factory=QMessageBox,
+            open_after_disconnection=self.open_after_disconnection,
+            destroy_root_fn=lambda: root.destroy(),
+            warning_icon=QMessageBox.Icon.Warning,
+        )
+        return result
 
     def interface_check(self):
         global interface_in_use
-        if self.comport == WIFI_INTERFACE_OPTION:
-            interface_in_use = 1
-        else:
-            interface_in_use = 0
+        interface_in_use = interface_check_handle(self.comport, WIFI_INTERFACE_OPTION)
 
     def open_usb_info(self):
         global flag_raised, ser, usb_button_flag, newoutput, interface_in_use
@@ -7839,11 +7828,8 @@ class Ui_MainWindow(object):
         self.rate = text.strip()
 
     def read_decoded_line(self):
-        if interface_in_use == 0:
-            global ser
-            return read_serial_decoded_line(ser)
-        else:
-            print("Wifi")
+        global ser
+        return read_decoded_line_interface_handle(ser, interface_in_use)
 		
     def rtcm_record_command(self, filepath):
         filepath = filepath
@@ -8751,14 +8737,12 @@ class Ui_MainWindow(object):
             return
         
     def read_Response_END(self):
-        if interface_in_use == 0:
-            return read_serial_response_end(
-                ser,
-                file_path_to_read_response,
-                get_current_datetime,
-            )
-        else:
-            print("Wifi")
+        return read_response_end_interface_handle(
+            ser,
+            interface_in_use,
+            file_path_to_read_response,
+            get_current_datetime,
+        )
 
     def connectivity_done(self):
         print(self.reference_frequency)
