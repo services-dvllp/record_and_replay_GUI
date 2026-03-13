@@ -1,4 +1,5 @@
 import socket
+import time
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
@@ -23,7 +24,7 @@ def list_wifi_hosts():
     return []
 
 
-def is_active_wifi_online(ssh_url, timeout_value=3):
+def is_active_wifi_online(ssh_url, timeout_value=0.75):
     try:
         _, host = _parse_ssh_url(ssh_url)
         socket.create_connection((host, 22), timeout=timeout_value).close()
@@ -76,7 +77,7 @@ def connect_to_interface(wifi_connection, ssh_url, ssh_password, timeout_value=1
         return None, str(err)
 
 
-def send_wifi_command(wifi_connection, command):
+def send_wifi_command(wifi_connection, command, warmup_delay=0.05):
     if wifi_connection is None:
         return None
 
@@ -85,9 +86,34 @@ def send_wifi_command(wifi_connection, command):
 
     stdin, stdout, stderr = wifi_connection.client.exec_command(command)
     _ = stdin
+    channel = stdout.channel
 
-    wifi_connection.last_stdout_lines = stdout.readlines()
-    wifi_connection.last_stderr_lines = stderr.readlines()
+    # Avoid blocking on long-running remote commands (e.g., recording/replay).
+    # Collect only data that is currently available, then return immediately.
+    if warmup_delay > 0:
+        time.sleep(warmup_delay)
+
+    stdout_chunks = []
+    stderr_chunks = []
+
+    while channel.recv_ready():
+        stdout_chunks.append(channel.recv(4096))
+
+    while channel.recv_stderr_ready():
+        stderr_chunks.append(channel.recv_stderr(4096))
+
+    if channel.exit_status_ready():
+        # Command has already completed; drain any trailing output that became available.
+        while channel.recv_ready():
+            stdout_chunks.append(channel.recv(4096))
+        while channel.recv_stderr_ready():
+            stderr_chunks.append(channel.recv_stderr(4096))
+
+    stdout_data = b"".join(stdout_chunks)
+    stderr_data = b"".join(stderr_chunks)
+
+    wifi_connection.last_stdout_lines = stdout_data.splitlines(keepends=True)
+    wifi_connection.last_stderr_lines = stderr_data.splitlines(keepends=True)
     return len(wifi_connection.last_stdout_lines)
 
 
