@@ -25,10 +25,13 @@ def list_wifi_hosts():
 
 def is_active_wifi_online(ssh_url, timeout_value=3):
     try:
+        print(f"Checking WiFi host connectivity for {ssh_url}...")
         _, host = _parse_ssh_url(ssh_url)
         socket.create_connection((host, 22), timeout=timeout_value).close()
+        print(f"Host {host} is reachable on port 22.")
         return True
     except Exception:
+        print(f"Host {host} is not reachable on port 22.")
         return False
 
 
@@ -42,6 +45,7 @@ def monitor_wifi_disconnect_status(
 
     while is_running():
         set_disconnected_status(not is_active_wifi_online(ssh_url))
+        #set_disconnected_status(False)
         time.sleep(sleep_interval)
 
 
@@ -52,6 +56,7 @@ def disconnect_interface(wifi_connection):
 
 def connect_to_interface(wifi_connection, ssh_url, ssh_password, timeout_value=10):
     disconnect_interface(wifi_connection)
+    print(f"Attempting to connect to WiFi host at {ssh_url} ...")
     username_from_url, host = _parse_ssh_url(ssh_url)
     username = username_from_url or "root"
 
@@ -92,6 +97,7 @@ def send_wifi_command(wifi_connection, command):
 
 
 def read_wifi_lines(wifi_connection):
+    print(f"wifi connection: {wifi_connection}")
     if wifi_connection is None:
         return []
     return wifi_connection.last_stdout_lines
@@ -119,7 +125,7 @@ def read_wifi_response_end(wifi_connection, file_path_to_read_response, current_
         return []
 
     lines = wifi_connection.last_stdout_lines
-    with open(file_path_to_read_response, "a") as file:
-        file.write(f"\n{current_datetime_func()}   {lines}\n\n")
-
-    return lines
+    """with open(file_path_to_read_response, "a") as file:
+        file.write(f"\n{current_datetime_func()}   {lines}\n\n")"""
+    encoded_lines = [line.encode() if isinstance(line, str) else line for line in lines]
+    return encoded_lines

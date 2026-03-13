@@ -24,14 +24,14 @@ from serial_interface_utils import (
 from wifi_interface_utils import connect_to_interface as connect_to_wifi_interface
 from interface_dependent_functions import (
     send_command_interface_handle,
-    read_lines_interface_handle,
-    read_line_interface_handle,
+    #read_lines_interface_handle,
+    #read_line_interface_handle,
     interface_is_online as interface_is_online_handle,
     worker_run_interface_handle,
     ensure_interface_disconnection_handle,
     ensure_interface_connection_handle,
     interface_check_handle,
-    read_decoded_line_interface_handle,
+    #read_decoded_line_interface_handle,
     read_response_end_interface_handle,
 )
 
@@ -51,6 +51,8 @@ from PyQt6.QtCore import Qt
 ssh_username = "root"
 ssh_fixed_url = f"{ssh_username}@192.168.4.1"
 ssh_password = "root"
+active_com_port_used_for_rtcm = None
+ssh_url = None
 ########## User and Developer Code ############
 Commands_file_user = True
 browse_folder_for_HWUSB = False
@@ -216,14 +218,72 @@ comport_1_checked = False
 comport_2_checked = False
 main_func_called = False
 ###############################################################################
+###############################################################################
 def send_command(command):
     send_command_interface_handle(command, ser, interface_in_use)
 
 def read_lines():
-    read_lines_interface_handle(ser, interface_in_use)
+    if interface_in_use == 0:
+        return read_serial_lines(ser)
+    else:
+        return read_wifi_lines(ser)
 
 def read_line():
-    read_line_interface_handle(ser, interface_in_use)
+    if interface_in_use == 0:
+        return read_serial_line(ser)
+    else:
+        return read_wifi_line(ser)
+
+###############################################################################
+###############################################################################
+def read_serial_lines(serial_connection):
+    if serial_connection is None:
+        return []
+    serial_output = serial_connection.read(serial_connection.in_waiting)
+    return serial_output
+
+def read_serial_line(serial_connection):
+    if serial_connection is None:
+        return []
+    return serial_connection.readlines(1)
+
+def read_serial_decoded_line(serial_connection):
+    if serial_connection is None:
+        return ""
+    return serial_connection.readline().decode(errors='ignore')
+
+def read_wifi_lines(wifi_connection):
+    print(f"wifi connection: {wifi_connection}")
+    if wifi_connection is None:
+        return []
+    lines =  wifi_connection.last_stdout_lines
+    encoded_lines = [line.encode() if isinstance(line, str) else line for line in lines]
+    return encoded_lines
+
+def read_wifi_line(wifi_connection):
+    if wifi_connection is None:
+        return []
+    lines = wifi_connection.last_stdout_lines[:1]
+    encoded_lines = [line.encode() if isinstance(line, str) else line for line in lines]
+    return encoded_lines
+
+def read_wifi_decoded_line(wifi_connection):
+    if wifi_connection is None:
+        print("wifi connection is None")
+        return ""
+    if not wifi_connection.last_stdout_lines:
+        print("No lines in wifi connection")
+        return ""
+    line = wifi_connection.last_stdout_lines
+    print(f"line: {line}")
+    return line
+    """if isinstance(line, bytes):
+        x = line.decode(errors="ignore")
+        print(f"decoded line: {x}")
+        return line.decode(errors="ignore")"""
+###############################################################################
+###############################################################################
+
 ####################### Get the Current Date and Time ##########################
 def get_current_datetime():
     timestamp = time.time()
@@ -356,7 +416,7 @@ if Commands_file_user:
 
 ##################################################################################
 def interface_is_online(active_comport):
-    return interface_is_online_handle(active_comport, interface_in_use)
+    return interface_is_online_handle(active_comport, ssh_url, interface_in_use)
     
 def interface_is_onlineRTCM(active_comport):
     ports = list_hardware_com_ports()
@@ -698,6 +758,72 @@ def filename_txt_string_editor(string):
     string = str(string).split("/")
     string = "\/".join(string)
     return string
+
+def monitor_serial_disconnect_status(
+    is_running,
+    checked_both_without_hwusb,
+    active_comport_used,
+    active_com_port_used_for_rtcm,
+    set_disconnected_status,
+    sleep_interval=0.5,
+):
+    while is_running():
+        ports = list_hardware_com_ports()
+        if checked_both_without_hwusb:
+            if active_comport_used and active_com_port_used_for_rtcm in ports:
+                set_disconnected_status(False)
+            else:
+                set_disconnected_status(True)
+            time.sleep(sleep_interval)
+        else:
+            if active_comport_used in ports:
+                set_disconnected_status(False)
+            else:
+                set_disconnected_status(True)
+            time.sleep(sleep_interval)
+
+import socket
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple
+
+import paramiko
+
+
+@dataclass
+class WifiSSHInterface:
+    client: paramiko.SSHClient
+    last_stdout_lines: List[bytes] = field(default_factory=list)
+    last_stderr_lines: List[bytes] = field(default_factory=list)
+
+def _parse_ssh_url(ssh_url: str) -> Tuple[Optional[str], str]:
+    if "@" in ssh_url:
+        username, host = ssh_url.split("@", 1)
+        return username.strip() or None, host.strip()
+    return None, ssh_url.strip()
+
+def is_active_wifi_online(ssh_url, timeout_value=3):
+    try:
+        print(f"Checking WiFi host connectivity for {ssh_url}...")
+        _, host = _parse_ssh_url(ssh_url)
+        socket.create_connection((host, 22), timeout=timeout_value).close()
+        print(f"Host {host} is reachable on port 22.")
+        return True
+    except Exception:
+        print(f"Host {host} is not reachable on port 22.")
+        return False
+    
+def monitor_wifi_disconnect_status(
+    is_running,
+    ssh_url,
+    set_disconnected_status,
+    sleep_interval=0.5,
+):
+    import time
+
+    while is_running():
+        set_disconnected_status(not is_active_wifi_online(ssh_url))
+        #set_disconnected_status(False)
+        time.sleep(sleep_interval)
 #######################################################################################################
 class Worker(QThread):
     def __init__(self):
@@ -706,7 +832,29 @@ class Worker(QThread):
     def run(self):
         global disconnected_comport_while_recording_replaying
         # Infinite loop controlled by `self.running`
-        worker_run_interface_handle(
+        if interface_in_use == 0:
+            monitor_serial_disconnect_status(
+                is_running=lambda: self.running,
+                checked_both_without_hwusb=checked_both_without_HWUSB,
+                active_comport_used=active_comport_used,
+                active_com_port_used_for_rtcm=active_com_port_used_for_rtcm,
+                set_disconnected_status=lambda value: globals().__setitem__(
+                    "disconnected_comport_while_recording_replaying", value
+                ),
+            )
+        else:
+            print(f"Starting WiFi disconnect monitor for SSH URL: {ssh_url}")
+            monitor_wifi_disconnect_status(
+                is_running=lambda: self.running,
+                ssh_url=ssh_url,
+                set_disconnected_status=lambda value: globals().__setitem__(
+                    "disconnected_comport_while_recording_replaying", value
+                ),
+            )
+
+        
+        """worker_run_interface_handle(
+            ssh_url=ssh_url,    
             interface_in_use=interface_in_use,
             is_running=lambda: self.running,
             checked_both_without_hwusb=checked_both_without_HWUSB,
@@ -715,7 +863,7 @@ class Worker(QThread):
             set_disconnected_status=lambda value: globals().__setitem__(
                 "disconnected_comport_while_recording_replaying", value
             ),
-        )
+        )"""
     def stop(self):
         self.running = False  # Set flag to stop the loop
 #############################################################################################################
@@ -5777,10 +5925,10 @@ class Ui_MainWindow(object):
         else:
             if self.comport == WIFI_INTERFACE_OPTION:
                 print("Router WiFi")
-                ssh_url = ssh_fixed_url
+                ssh_url = f"{ssh_username}@{self.lineEdit_hostname.text().strip()}.local"
             elif self.comport == WIFI_INTERFACE_OPTION_2:
                 print("Board WiFi")
-                ssh_url = f"{ssh_username}@{self.lineEdit_hostname.text().strip()}.local"
+                ssh_url = ssh_fixed_url
             else:
                 print("Unknown WiFi interface")
                 return False
@@ -7861,7 +8009,10 @@ class Ui_MainWindow(object):
 
     def read_decoded_line(self):
         global ser
-        return read_decoded_line_interface_handle(ser, interface_in_use)
+        if interface_in_use == 0:
+            return read_serial_decoded_line(ser)
+        else:
+            return read_wifi_decoded_line(ser)
 		
     def rtcm_record_command(self, filepath):
         filepath = filepath
@@ -8844,6 +8995,7 @@ class Ui_MainWindow(object):
             only_ad9361 = False
             only_rtcm = False
             active_com_port_used_for_rtcm = self.comport_rtcm
+            print(f"active_com_port_used_for_rtcm: {active_com_port_used_for_rtcm}")
         selected_submit = True
         self.interface_check()
         if selected_submit:
@@ -14589,8 +14741,9 @@ class Ui_MainWindow(object):
             global read_response, recording_started, terminated, flag_raised_for_stop_Recording
             while True:
                 if read_response:
-                    #print("read")
+                    print("read")
                     line = self.read_decoded_line()
+                    print(f"line decider: {line}")
                     if "Terminated before the full duration!" in line:
                         terminated = True
                         break

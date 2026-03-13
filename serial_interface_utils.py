@@ -52,14 +52,19 @@ def connect_to_interface(serial_connection, comport, baudrate, timeout_value):
         return None
 
 def send_serial_command(serial_connection, command):
+    print(f"Sending command to serial connection: {serial_connection}")
     if serial_connection is not None:
         return serial_connection.write(command)
     return None
 
 def read_serial_lines(serial_connection):
+    print(f"Reading lines from serial connection: {serial_connection}")
     if serial_connection is None:
+        print("Serial connection is None, returning empty list.")
         return []
-    return serial_connection.readlines(serial_connection.in_waiting)
+    serial_output = serial_connection.read(serial_connection.in_waiting)
+    print(f"Serial output read: {serial_output}")
+    return serial_output
 
 def read_serial_line(serial_connection):
     if serial_connection is None:

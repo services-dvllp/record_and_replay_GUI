@@ -23,14 +23,15 @@ from wifi_interface_utils import (
 )
 
 
-def interface_is_online(active_comport, interface_in_use):
+def interface_is_online(active_comport, ssh_url, interface_in_use):
     if interface_in_use == 0:
         return is_active_comport_online(active_comport)
     else:
-        return is_active_wifi_online(active_comport)
+        return is_active_wifi_online(ssh_url)
 
 
 def worker_run_interface_handle(
+    ssh_url,
     interface_in_use,
     is_running,
     checked_both_without_hwusb,
@@ -47,9 +48,10 @@ def worker_run_interface_handle(
             set_disconnected_status=set_disconnected_status,
         )
     else:
+        print(f"Starting WiFi disconnect monitor for SSH URL: {ssh_url}")
         monitor_wifi_disconnect_status(
             is_running=is_running,
-            ssh_url=active_comport_used,
+            ssh_url=ssh_url,
             set_disconnected_status=set_disconnected_status,
         )
 
@@ -168,6 +170,7 @@ def send_command_interface_handle(command, ser, interface_in_use):
         return send_wifi_command(ser, command)
 
 def read_lines_interface_handle(ser, interface_in_use):
+    print(f"Reading lines from interface. Interface in use: {interface_in_use}")
     if interface_in_use == 0:
         return read_serial_lines(ser)
     else:
