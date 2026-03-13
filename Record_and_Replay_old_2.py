@@ -6384,8 +6384,8 @@ class Ui_MainWindow(object):
                     return
                 fs_system_len = fs_system.split("/")
                 if not fs_system == "/dev/" and len(fs_system_len)>=3:
-                    thread_1 = threading.Thread(target=self.open_record_window())
-                    thread_2 = threading.Thread(target=self.get_max_duration_theorotical())        
+                    thread_1 = threading.Thread(target=self.open_record_window)
+                    thread_2 = threading.Thread(target=self.get_max_duration_theorotical)
                     # Start threads
                     thread_1.start()
                     thread_2.start()
@@ -16914,5 +16914,4 @@ if __name__ == "__main__":
         sys.exit(app.exec())
     except KeyboardInterrupt:
         print("KeyboardInterrupt received while the Qt event loop was running; closing cleanly.")
-
 
