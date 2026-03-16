@@ -50,13 +50,15 @@ def monitor_wifi_disconnect_status(
         time.sleep(sleep_interval)
 
 
-def disconnect_interface(wifi_connection):
+def disconnect_interface_wifi(wifi_connection):
     if wifi_connection is not None and getattr(wifi_connection, "client", None) is not None:
+        print("Closing WiFi SSH connection...")
+        print(f"WiFi SSH client before closing: {wifi_connection.client}")
         wifi_connection.client.close()
 
 
 def connect_to_interface(wifi_connection, ssh_url, ssh_password, timeout_value=10):
-    disconnect_interface(wifi_connection)
+    disconnect_interface_wifi(wifi_connection)
     print(f"Attempting to connect to WiFi host at {ssh_url} ...")
     username_from_url, host = _parse_ssh_url(ssh_url)
     username = username_from_url or "root"
@@ -82,7 +84,7 @@ def connect_to_interface(wifi_connection, ssh_url, ssh_password, timeout_value=1
         return None, str(err)
 
 
-def send_wifi_command(wifi_connection, command, warmup_delay=0.05):
+def send_wifi_command(wifi_connection, command, warmup_delay=0.5):
     if wifi_connection is None:
         return None
 

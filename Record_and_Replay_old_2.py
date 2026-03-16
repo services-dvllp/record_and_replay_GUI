@@ -19,9 +19,10 @@ from serial_interface_utils import (
     read_serial_response_end,
     list_hardware_com_ports,
     is_active_comport_online,
-    monitor_serial_disconnect_status,
+    #monitor_serial_disconnect_status,
 )
 from wifi_interface_utils import connect_to_interface as connect_to_wifi_interface
+
 from interface_dependent_functions import (
     send_command_interface_handle,
     #read_lines_interface_handle,
@@ -788,7 +789,6 @@ from typing import List, Optional, Tuple
 
 import paramiko
 
-
 @dataclass
 class WifiSSHInterface:
     client: paramiko.SSHClient
@@ -801,12 +801,17 @@ def _parse_ssh_url(ssh_url: str) -> Tuple[Optional[str], str]:
         return username.strip() or None, host.strip()
     return None, ssh_url.strip()
 
-def is_active_wifi_online(ssh_url, timeout_value=3):
+def is_active_wifi_online(ssh_url, checked_both_without_hwusb, active_com_port_used_for_rtcm, timeout_value=3):
     try:
         print(f"Checking WiFi host connectivity for {ssh_url}...")
         _, host = _parse_ssh_url(ssh_url)
         socket.create_connection((host, 22), timeout=timeout_value).close()
         print(f"Host {host} is reachable on port 22.")
+        ports = list_hardware_com_ports()
+        if checked_both_without_hwusb:
+            if active_com_port_used_for_rtcm in ports:
+                pass
+            else: return False
         return True
     except Exception:
         print(f"Host {host} is not reachable on port 22.")
@@ -816,12 +821,14 @@ def monitor_wifi_disconnect_status(
     is_running,
     ssh_url,
     set_disconnected_status,
+    checked_both_without_hwusb,
+    active_com_port_used_for_rtcm,
     sleep_interval=0.5,
 ):
     import time
 
     while is_running():
-        set_disconnected_status(not is_active_wifi_online(ssh_url))
+        set_disconnected_status(not is_active_wifi_online(ssh_url, checked_both_without_hwusb, active_com_port_used_for_rtcm))
         #set_disconnected_status(False)
         time.sleep(sleep_interval)
 #######################################################################################################
@@ -847,6 +854,8 @@ class Worker(QThread):
             monitor_wifi_disconnect_status(
                 is_running=lambda: self.running,
                 ssh_url=ssh_url,
+                checked_both_without_hwusb=checked_both_without_HWUSB,
+                active_com_port_used_for_rtcm=active_com_port_used_for_rtcm,
                 set_disconnected_status=lambda value: globals().__setitem__(
                     "disconnected_comport_while_recording_replaying", value
                 ),
@@ -1735,14 +1744,38 @@ class Ui_MainWindow(object):
         """)
         self.label_developer.setVisible(False)
 
+        self.pushButton_connectwifi = QtWidgets.QPushButton(self.frame)
+        self.pushButton_connectwifi.setGeometry(QtCore.QRect(550, 400, 100, 30))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setBold(False)
+        self.pushButton_connectwifi.setFont(font)
+        self.pushButton_connectwifi.setStyleSheet("""
+            QPushButton {
+                background-color: #1ABC9C;
+                color: white; 
+                padding: 5px;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #16A085;
+            }
+            QPushButton:pressed {
+                background-color: #148F77;
+            }
+        """)
+        self.pushButton_connectwifi.setText("Connect")
+        self.pushButton_connectwifi.setObjectName("pushButton_connectwifi")
+        self.pushButton_connectwifi.clicked.connect(self.connect_to_wifi)
+
         self.label_ssid = QtWidgets.QLabel(self.frame)
-        self.label_ssid.setGeometry(QtCore.QRect(280, 350, 120, 30))
+        self.label_ssid.setGeometry(QtCore.QRect(130, 400, 100, 30))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
         self.label_ssid.setFont(font)
         self.label_ssid.setObjectName("label_ssid")
-        self.label_ssid.setText("")
+        self.label_ssid.setText("WiFi Config")
         self.label_ssid.setStyleSheet("""
             QLabel {
                 color: #ECF0F1;
@@ -1750,7 +1783,7 @@ class Ui_MainWindow(object):
         """)
 
         self.lineEdit_hostname = QtWidgets.QLineEdit(self.frame)
-        self.lineEdit_hostname.setGeometry(QtCore.QRect(300, 400, 120, 30))
+        self.lineEdit_hostname.setGeometry(QtCore.QRect(380, 450, 60, 30))
         font = QtGui.QFont()
         font.setPointSize(10)
         font.setBold(False)
@@ -1769,7 +1802,7 @@ class Ui_MainWindow(object):
         self.lineEdit_hostname.setText("zbd")
 
         self.label_hostname = QtWidgets.QLabel(self.frame)
-        self.label_hostname.setGeometry(QtCore.QRect(160, 400, 130, 30))
+        self.label_hostname.setGeometry(QtCore.QRect(280, 450, 100, 30))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
@@ -1783,7 +1816,7 @@ class Ui_MainWindow(object):
         """)
 
         self.lineEdit_password = QtWidgets.QLineEdit(self.frame)
-        self.lineEdit_password.setGeometry(QtCore.QRect(450, 400, 120, 30))
+        self.lineEdit_password.setGeometry(QtCore.QRect(400, 400, 120, 30))
         font = QtGui.QFont()
         font.setPointSize(10)
         font.setBold(False)
@@ -1802,8 +1835,31 @@ class Ui_MainWindow(object):
                                             border: 2px solid #2E5;
                                         }
                                     """)
+        
+        self.lineEdit_SSID = QtWidgets.QLineEdit(self.frame)
+        self.lineEdit_SSID.setGeometry(QtCore.QRect(250, 400, 120, 30))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setBold(False)
+        self.lineEdit_SSID.setFont(font)
+        self.lineEdit_SSID.setPlaceholderText("Enter SSID")
+        self.lineEdit_SSID.setObjectName("lineEdit_SSID")
+        self.lineEdit_SSID.setStyleSheet("""
+                                        QLineEdit {
+                                            background-color: #2C3E50;
+                                            color: #FFFFFF;
+                                            border: 2px solid #1ABC9C;
+                                            border-radius: 5px;
+                                            padding: 5px;
+                                        }
+                                        QLineEdit:focus {
+                                            border: 2px solid #2E5;
+                                        }
+                                    """)
+        
         self.lineEdit_hostname.setVisible(False)
         self.lineEdit_password.setVisible(False)
+        self.lineEdit_SSID.setVisible(False)
         self.label_hostname.setVisible(False)
         self.label_ssid.setVisible(False)
 
@@ -3559,7 +3615,7 @@ class Ui_MainWindow(object):
         
         #submit button
         self.pushButton_submit = QtWidgets.QPushButton(self.frame)
-        self.pushButton_submit.setGeometry(QtCore.QRect(320, 450, 80, 30))
+        self.pushButton_submit.setGeometry(QtCore.QRect(320, 500, 80, 30))
         font = QtGui.QFont()
         font.setPointSize(13)
         font.setBold(True)
@@ -4427,6 +4483,16 @@ class Ui_MainWindow(object):
         self.comboBox.currentIndexChanged.connect(self.on_selection_change)
         self.comboBox_2.currentIndexChanged.connect(self.on_selection_change_2)
     
+
+    def connect_to_wifi(self):
+        SSID = self.lineEdit_SSID.text()
+        PASSWORD = self.lineEdit_password.text()
+        print("Connecting to WiFi...")
+        print(f"SSID: {SSID}")
+        print(f"PASSWORD: {PASSWORD}")
+        # Here you would add the actual code to connect to WiFi using the provided SSID
+
+
     def comboBox_comport_popup(self):
         global current_port
         print("Hi")
@@ -5119,12 +5185,14 @@ class Ui_MainWindow(object):
         if item == WIFI_INTERFACE_OPTION:
             self.lineEdit_hostname.setVisible(True)
             self.label_ssid.setVisible(True)
-            self.lineEdit_password.setVisible(False)
+            self.lineEdit_password.setVisible(True)
+            self.lineEdit_SSID.setVisible(True)
             self.label_hostname.setVisible(True)
         else:
             self.lineEdit_hostname.setVisible(False)
             self.label_ssid.setVisible(False)
             self.lineEdit_password.setVisible(False)
+            self.lineEdit_SSID.setVisible(False)
             self.label_hostname.setVisible(False)
 
     def on_rtcm_dropdown(self, index):
@@ -6197,6 +6265,7 @@ class Ui_MainWindow(object):
                     self.lineEdit_hostname.setVisible(False)
                     self.label_ssid.setVisible(False)
                     self.lineEdit_password.setVisible(False)
+                    self.lineEdit_SSID.setVisible(False)
                     self.label_hostname.setVisible(False)
                     self.label_gpiomode.setVisible(False)
                     self.radioButton_gpiomode.setVisible(False)
@@ -6787,8 +6856,8 @@ class Ui_MainWindow(object):
     def open_after_disconnection(self):
             global comport_connected, submitted, config_button, ser_rtcm, check_comport, ser
             comport_connected = False
-            if ser.isOpen():
-                self.ensure_interface_disconnection()
+            #if ser.isOpen():
+            self.ensure_interface_disconnection()
             if checked_both_without_HWUSB:
                 if ser_rtcm.isOpen():
                     ser_rtcm.close()
@@ -6891,12 +6960,14 @@ class Ui_MainWindow(object):
             if item == WIFI_INTERFACE_OPTION:
                 self.lineEdit_hostname.setVisible(True)
                 self.label_ssid.setVisible(True)
-                self.lineEdit_password.setVisible(False)
+                self.lineEdit_password.setVisible(True)
+                self.lineEdit_SSID.setVisible(True)
                 self.label_hostname.setVisible(True)
             else:
                 self.lineEdit_hostname.setVisible(False)
                 self.label_ssid.setVisible(False)
                 self.lineEdit_password.setVisible(False)
+                self.lineEdit_SSID.setVisible(False)
                 self.label_hostname.setVisible(False)
             self.label_gpiomode.setVisible(False)
             self.radioButton_gpiomode.setVisible(False)
@@ -7716,6 +7787,7 @@ class Ui_MainWindow(object):
                     self.label_radio.setVisible(False)
                     self.lineEdit_hostname.setVisible(False)
                     self.lineEdit_password.setVisible(False)
+                    self.lineEdit_SSID.setVisible(False)
                     self.label_ssid.setVisible(False)
                     self.label_hostname.setVisible(False)
                     self.label_gpiomode.setVisible(False)
@@ -8027,7 +8099,6 @@ class Ui_MainWindow(object):
             send_command(bytearray(command,'ascii'))
             with open(file_path, 'a') as file:
                 file.write(f'\n{get_current_datetime()}   {command}\n')
-
 
     def rtcm_replay_command(self, filepath, autoreplay, startoffset_HW_rtcm, runduration_HW_rtcm):
         filepath = filepath
@@ -9196,6 +9267,7 @@ class Ui_MainWindow(object):
             self.label_radio.setVisible(False)
             self.lineEdit_hostname.setVisible(False)
             self.lineEdit_password.setVisible(False)
+            self.lineEdit_SSID.setVisible(False)
             self.label_ssid.setVisible(False)
             self.label_hostname.setVisible(False)
             self.label_gpiomode.setVisible(False)
@@ -9491,9 +9563,9 @@ class Ui_MainWindow(object):
                     with open(file_path, 'a') as file:
                         file.write(f'nice --20 /home/root/adc4bits/libiio/build/examples/switches\n')
             comport_connected = False
-            if ser.isOpen():
-                self.ensure_interface_disconnection()
-                print("closed!")
+            #if ser.isOpen():
+            self.ensure_interface_disconnection()
+            print("closed!")
             if checked_both_without_HWUSB:
                 if ser_rtcm.isOpen():
                     ser_rtcm.close()
@@ -9509,12 +9581,14 @@ class Ui_MainWindow(object):
             if item == WIFI_INTERFACE_OPTION:
                 self.lineEdit_hostname.setVisible(True)
                 self.label_ssid.setVisible(True)
-                self.lineEdit_password.setVisible(False)
+                self.lineEdit_password.setVisible(True)
+                self.lineEdit_SSID.setVisible(True)
                 self.label_hostname.setVisible(True)
             else:
                 self.lineEdit_hostname.setVisible(False)
                 self.label_ssid.setVisible(False)
                 self.lineEdit_password.setVisible(False)
+                self.lineEdit_SSID.setVisible(False)
                 self.label_hostname.setVisible(False)
             self.label_gpiomode.setVisible(False)
             self.radioButton_gpiomode.setVisible(False)
@@ -13794,6 +13868,7 @@ class Ui_MainWindow(object):
             self.label_radio.setVisible(False)
             self.lineEdit_hostname.setVisible(False)
             self.lineEdit_password.setVisible(False)
+            self.lineEdit_SSID.setVisible(False)
             self.label_ssid.setVisible(False)
             self.label_hostname.setVisible(False)
             self.label_gpiomode.setVisible(False)
@@ -13812,6 +13887,7 @@ class Ui_MainWindow(object):
                 self.lineEdit_hostname.setVisible(False)
                 self.label_ssid.setVisible(False)
                 self.lineEdit_password.setVisible(False)
+                self.lineEdit_SSID.setVisible(False)
                 self.label_hostname.setVisible(False)
                 self.label_gpiomode.setVisible(False)
                 self.radioButton_gpiomode.setVisible(False)
@@ -14030,12 +14106,14 @@ class Ui_MainWindow(object):
                 if item == WIFI_INTERFACE_OPTION:
                     self.lineEdit_hostname.setVisible(True)
                     self.label_ssid.setVisible(True)
-                    self.lineEdit_password.setVisible(False)
+                    self.lineEdit_password.setVisible(True)
+                    self.lineEdit_SSID.setVisible(True)
                     self.label_hostname.setVisible(True)
                 else:
                     self.lineEdit_hostname.setVisible(False)
                     self.label_ssid.setVisible(False)
                     self.lineEdit_password.setVisible(False)
+                    self.lineEdit_SSID.setVisible(False)
                     self.label_hostname.setVisible(False)
                 self.label_gpiomode.setVisible(False)
                 self.radioButton_gpiomode.setVisible(False)
@@ -14070,6 +14148,7 @@ class Ui_MainWindow(object):
                 self.label_radio.setVisible(False)
                 self.lineEdit_hostname.setVisible(False)
                 self.lineEdit_password.setVisible(False)
+                self.lineEdit_SSID.setVisible(False)
                 self.label_ssid.setVisible(False)
                 self.label_hostname.setVisible(False)
                 self.label_gpiomode.setVisible(False)
@@ -14574,6 +14653,7 @@ class Ui_MainWindow(object):
                     self.label_radio.setVisible(False)
                     self.lineEdit_hostname.setVisible(False)
                     self.lineEdit_password.setVisible(False)
+                    self.lineEdit_SSID.setVisible(False)
                     self.label_ssid.setVisible(False)
                     self.label_hostname.setVisible(False)
                     self.label_gpiomode.setVisible(False)
@@ -14599,6 +14679,7 @@ class Ui_MainWindow(object):
                     self.label_radio.setVisible(False)
                     self.lineEdit_hostname.setVisible(False)
                     self.lineEdit_password.setVisible(False)
+                    self.lineEdit_SSID.setVisible(False)
                     self.label_ssid.setVisible(False)
                     self.label_hostname.setVisible(False)
                     self.label_gpiomode.setVisible(False)

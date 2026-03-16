@@ -12,7 +12,7 @@ from serial_interface_utils import (
 )
 from wifi_interface_utils import (
     connect_to_interface as connect_to_wifi_interface,
-    disconnect_interface as disconnect_wifi_interface,
+    disconnect_interface_wifi,
     send_wifi_command,
     read_wifi_line,
     read_wifi_lines,
@@ -60,7 +60,7 @@ def ensure_interface_disconnection_handle(ser, interface_in_use):
     if interface_in_use == 0:
         disconnect_interface(ser)
     else:
-        disconnect_wifi_interface(ser)
+        disconnect_interface_wifi(ser)
 
 def ensure_interface_connection_handle(
     ser,
