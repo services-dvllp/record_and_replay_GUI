@@ -5,9 +5,11 @@ import math
 import time
 import datetime
 import threading
+import subprocess
 #from datetime import datetime
 import serial
 import serial.tools.list_ports
+import requests
 from serial.tools import list_ports
 from serial_interface_utils import (
     connect_to_interface,
@@ -133,6 +135,8 @@ log_file_size = 1000000 #1MB
 satellite_clicks = 5 #satellite clicks to move to developer mode
 WIFI_INTERFACE_OPTION = "Router WiFi"
 WIFI_INTERFACE_OPTION_2 = "Board WiFi"
+BOARD_IP = "192.168.4.1"
+HOTSPOT = "ZUmini_Setup"
 ############ Flags ####################
 center_frequency_flag = False
 center_frequency_flag_2 = False
@@ -4484,20 +4488,116 @@ class Ui_MainWindow(object):
         self.comboBox_2.currentIndexChanged.connect(self.on_selection_change_2)
     
 
+    def run_wifi_setup_command(self, command):
+        return subprocess.run(command, shell=True)
+
+    def connect_to_hotspot(self):
+        print("Connecting to ZUmini hotspot...")
+        self.run_wifi_setup_command(f'netsh wlan connect name="{HOTSPOT}" ssid="{HOTSPOT}"')
+
+        for _ in range(20):
+            res = subprocess.run(
+                "netsh wlan show interfaces",
+                shell=True,
+                capture_output=True,
+                text=True,
+            )
+
+            if HOTSPOT in res.stdout:
+                print("Connected to hotspot")
+                return True
+
+            time.sleep(1)
+
+        return False
+
+    def wait_for_board(self):
+        print("Waiting for board to respond...")
+
+        for _ in range(20):
+            res = subprocess.run(
+                "ping -n 1 192.168.4.1",
+                shell=True,
+                capture_output=True,
+                text=True,
+            )
+
+            if "TTL=" in res.stdout:
+                print("Board reachable")
+                return True
+
+            time.sleep(1)
+
+        return False
+
+    def get_hostname(self):
+        try:
+            response = requests.get(f"http://{BOARD_IP}/get_hostname", timeout=3)
+            print("Board hostname:", response.text.strip())
+        except Exception:
+            print("Could not fetch hostname")
+
+    def send_wifi_credentials(self, ssid, password):
+        url = f"http://{BOARD_IP}/wifi_connect"
+        data = {
+            "ssid": ssid,
+            "psk": password,
+        }
+
+        print("Sending WiFi credentials to board...")
+
+        try:
+            response = requests.post(url, data=data, timeout=10)
+            print("Board response:")
+            print(response.text)
+            return True
+        except requests.exceptions.ConnectionError:
+            # Expected because board resets wlan0
+            print("Connection dropped (expected).")
+            print("Board is switching to router WiFi.")
+            return True
+        except Exception as err:
+            print(f"Failed to send WiFi credentials: {err}")
+            return False
+
     def connect_to_wifi(self):
-        SSID = self.lineEdit_SSID.text()
-        PASSWORD = self.lineEdit_password.text()
+        SSID = self.lineEdit_SSID.text().strip()
+        PASSWORD = self.lineEdit_password.text().strip()
         current_button_text = self.pushButton_connectwifi.text().strip().lower()
 
         if current_button_text == "connect":
-            print("Connecting to WiFi...")
-            print(f"SSID: {SSID}")
-            print(f"PASSWORD: {PASSWORD}")
-            self.pushButton_connectwifi.setText("Disconnect")
-            print("Connected")
-        else:
-            self.pushButton_connectwifi.setText("Connect")
-            print("Disconnected")
+            if not SSID or not PASSWORD:
+                print("SSID and password are required")
+                QMessageBox.warning(None, "WiFi", "Please enter SSID and password.")
+                return
+
+            if not self.connect_to_hotspot():
+                print("Failed to connect to hotspot")
+                QMessageBox.warning(None, "WiFi", "Not connected to ZUmini hotspot.")
+                return
+
+            if not self.wait_for_board():
+                print("Board not reachable")
+                QMessageBox.warning(None, "WiFi", "Connected to hotspot, but board is not reachable.")
+                return
+
+            self.get_hostname()
+
+            if self.send_wifi_credentials(SSID, PASSWORD):
+                self.pushButton_connectwifi.setText("Disconnect")
+                print("")
+                print("Provisioning command sent.")
+                print("Board should now connect to the router.")
+                QMessageBox.information(None, "WiFi", "WiFi credentials sent successfully.")
+            else:
+                QMessageBox.warning(None, "WiFi", "Failed to send WiFi credentials.")
+            return
+
+        print("Disconnecting from WiFi hotspot...")
+        self.run_wifi_setup_command("netsh wlan disconnect")
+        self.pushButton_connectwifi.setText("Connect")
+        print("Disconnected")
+        QMessageBox.information(None, "WiFi", "Disconnection successful.")
 
 
     def comboBox_comport_popup(self):
