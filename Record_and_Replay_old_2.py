@@ -4487,10 +4487,17 @@ class Ui_MainWindow(object):
     def connect_to_wifi(self):
         SSID = self.lineEdit_SSID.text()
         PASSWORD = self.lineEdit_password.text()
-        print("Connecting to WiFi...")
-        print(f"SSID: {SSID}")
-        print(f"PASSWORD: {PASSWORD}")
-        # Here you would add the actual code to connect to WiFi using the provided SSID
+        current_button_text = self.pushButton_connectwifi.text().strip().lower()
+
+        if current_button_text == "connect":
+            print("Connecting to WiFi...")
+            print(f"SSID: {SSID}")
+            print(f"PASSWORD: {PASSWORD}")
+            self.pushButton_connectwifi.setText("Disconnect")
+            print("Connected")
+        else:
+            self.pushButton_connectwifi.setText("Connect")
+            print("Disconnected")
 
 
     def comboBox_comport_popup(self):
@@ -17148,4 +17155,3 @@ if __name__ == "__main__":
         sys.exit(app.exec())
     except KeyboardInterrupt:
         print("KeyboardInterrupt received while the Qt event loop was running; closing cleanly.")
-
